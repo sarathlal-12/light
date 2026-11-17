@@ -1,0 +1,64 @@
+<UserControl x:Class="DotLight.Knobs.SnippetsKnob"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Grid>
+    <!-- All snippets: click one to paste it into the app you were using -->
+    <Grid x:Name="ListView">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="*"/>
+      </Grid.RowDefinitions>
+      <DockPanel>
+        <Button DockPanel.Dock="Right" Style="{StaticResource AccentBtn}" Background="{DynamicResource Blue}" Click="New_Click">
+          <StackPanel Orientation="Horizontal">
+            <TextBlock FontFamily="{StaticResource Icons}" Text="&#xE710;" FontSize="10" VerticalAlignment="Center" Margin="0,0,6,0"/>
+            <TextBlock Text="New"/>
+          </StackPanel>
+        </Button>
+        <StackPanel VerticalAlignment="Center">
+          <TextBlock Text="Snippets" FontWeight="SemiBold"/>
+          <TextBlock Text="Click to paste into your last app" Foreground="{StaticResource Muted}" FontSize="10"/>
+        </StackPanel>
+      </DockPanel>
+      <TextBlock x:Name="EmptyHint" Grid.Row="1" Foreground="{StaticResource Muted}" FontSize="11" TextWrapping="Wrap" TextAlignment="Center"
+                 VerticalAlignment="Center" Margin="20,0,20,20"
+                 Text="Save prompts you use again and again. Click one and it's typed into the app you were using."/>
+      <ScrollViewer Grid.Row="1" Margin="0,6,0,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <ItemsControl x:Name="List">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Border Style="{StaticResource HoverRow}" MouseLeftButtonUp="Snippet_Click" ToolTip="{Binding Text}">
+                <DockPanel>
+                  <Button DockPanel.Dock="Right" Style="{StaticResource IconBtn}" Width="24" Height="24" FontSize="10.5"
+                          Content="&#xE70F;" ToolTip="Edit" Click="Edit_Click" VerticalAlignment="Center" Margin="6,0,0,0"/>
+                  <TextBlock DockPanel.Dock="Left" FontFamily="{StaticResource Icons}" Text="&#xE8C8;" FontSize="10"
+                             Foreground="{DynamicResource Blue}" VerticalAlignment="Top" Margin="0,2,7,0"/>
+                  <StackPanel>
+                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Text="{Binding Preview}" Foreground="{StaticResource Muted}" FontSize="10.5" TextTrimming="CharacterEllipsis"/>
+                  </StackPanel>
+                </DockPanel>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+    </Grid>
+
+    <!-- One snippet open for editing -->
+    <Grid x:Name="EditView" Visibility="Collapsed">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="*"/>
+      </Grid.RowDefinitions>
+      <DockPanel>
+        <Button Style="{StaticResource IconBtn}" Width="26" Height="26" FontSize="11" Content="&#xE72B;" ToolTip="All snippets" Click="Back_Click"/>
+        <Button DockPanel.Dock="Right" Style="{StaticResource IconBtn}" Width="26" Height="26" FontSize="11"
+                Content="&#xE74D;" ToolTip="Delete snippet" Click="Delete_Click"/>
+        <TextBlock Text="First line is the name" Foreground="{StaticResource Muted}" FontSize="10.5" VerticalAlignment="Center" Margin="6,0,0,0"/>
+      </DockPanel>
+      <TextBox x:Name="Editor" Grid.Row="1" Margin="0,6,0,2" AcceptsReturn="True" TextWrapping="Wrap" VerticalContentAlignment="Top"
+               VerticalScrollBarVisibility="Auto" Padding="10,8" FontSize="12.5" TextChanged="Editor_Changed"/>
+    </Grid>
+  </Grid>
+</UserControl>

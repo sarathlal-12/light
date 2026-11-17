@@ -1,0 +1,63 @@
+<UserControl x:Class="DotLight.Knobs.NotesKnob"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Grid>
+    <!-- All notes -->
+    <Grid x:Name="ListView">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="*"/>
+      </Grid.RowDefinitions>
+      <DockPanel>
+        <Button DockPanel.Dock="Right" Style="{StaticResource AccentBtn}" Background="{DynamicResource Green}" Click="New_Click">
+          <StackPanel Orientation="Horizontal">
+            <TextBlock FontFamily="{StaticResource Icons}" Text="&#xE710;" FontSize="10" VerticalAlignment="Center" Margin="0,0,6,0"/>
+            <TextBlock Text="New note"/>
+          </StackPanel>
+        </Button>
+        <TextBlock Text="Notes" FontWeight="SemiBold" VerticalAlignment="Center"/>
+      </DockPanel>
+      <TextBlock x:Name="EmptyHint" Grid.Row="1" Foreground="{StaticResource Muted}" FontSize="11" TextWrapping="Wrap" TextAlignment="Center"
+                 VerticalAlignment="Center" Margin="20,0,20,20"
+                 Text="Quick thoughts, saved as you type. Pin one to see it in the island."/>
+      <ScrollViewer Grid.Row="1" Margin="0,6,0,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <ItemsControl x:Name="List">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Border Style="{StaticResource HoverRow}" MouseLeftButtonUp="Note_Click" ToolTip="Click to edit">
+                <DockPanel>
+                  <TextBlock DockPanel.Dock="Right" Text="{Binding TimeLabel}" Foreground="{StaticResource Muted}" FontSize="9.5"
+                             VerticalAlignment="Top" Margin="8,1,0,0"/>
+                  <TextBlock DockPanel.Dock="Left" FontFamily="{StaticResource Icons}" Text="&#xE840;" FontSize="10"
+                             Foreground="{DynamicResource Green}" Visibility="{Binding PinVisibility}" VerticalAlignment="Top" Margin="0,2,6,0"/>
+                  <StackPanel>
+                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Text="{Binding Preview}" Foreground="{StaticResource Muted}" FontSize="10.5" TextTrimming="CharacterEllipsis"/>
+                  </StackPanel>
+                </DockPanel>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+    </Grid>
+
+    <!-- One note open -->
+    <Grid x:Name="EditView" Visibility="Collapsed">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="*"/>
+      </Grid.RowDefinitions>
+      <DockPanel>
+        <Button Style="{StaticResource IconBtn}" Width="26" Height="26" FontSize="11" Content="&#xE72B;" ToolTip="All notes" Click="Back_Click"/>
+        <Button x:Name="DeleteBtn" DockPanel.Dock="Right" Style="{StaticResource IconBtn}" Width="26" Height="26" FontSize="11"
+                Content="&#xE74D;" ToolTip="Delete note" Click="Delete_Click"/>
+        <ToggleButton x:Name="PinBtn" DockPanel.Dock="Right" Style="{StaticResource IconToggle}" Width="26" Height="26" FontSize="11"
+                      Content="&#xE718;" ToolTip="Pin to the island" Click="Pin_Click"/>
+        <TextBlock x:Name="EditTime" Foreground="{StaticResource Muted}" FontSize="10.5" VerticalAlignment="Center" Margin="6,0,0,0"/>
+      </DockPanel>
+      <TextBox x:Name="Editor" Grid.Row="1" Margin="0,6,0,2" AcceptsReturn="True" TextWrapping="Wrap" VerticalContentAlignment="Top"
+               VerticalScrollBarVisibility="Auto" Padding="10,8" FontSize="12.5" TextChanged="Editor_Changed"/>
+    </Grid>
+  </Grid>
+</UserControl>

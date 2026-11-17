@@ -1,0 +1,33 @@
+<UserControl x:Class="DotLight.Knobs.ShelfKnob"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+    </Grid.RowDefinitions>
+    <DockPanel>
+      <Button x:Name="ClearBtn" DockPanel.Dock="Right" Style="{StaticResource TextBtn}" Content="Clear" ToolTip="Remove everything from the shelf (files stay where they are)"
+              Click="Clear_Click"/>
+      <Border x:Name="DragAll" DockPanel.Dock="Right" Background="{StaticResource Surface}" CornerRadius="7" Padding="9,4" Margin="0,0,6,0"
+              Cursor="Hand" ToolTip="Drag all files out at once" VerticalAlignment="Center"
+              PreviewMouseLeftButtonDown="Item_Down" PreviewMouseMove="All_Move">
+        <TextBlock x:Name="DragAllText" Text="Drag all" FontSize="11"/>
+      </Border>
+      <StackPanel VerticalAlignment="Center">
+        <TextBlock Text="Shelf" FontWeight="SemiBold"/>
+        <TextBlock Text="Drag files out to copy them" Foreground="{StaticResource Muted}" FontSize="10"/>
+      </StackPanel>
+    </DockPanel>
+    <TextBlock x:Name="EmptyHint" Grid.Row="1" Foreground="{StaticResource Muted}" FontSize="11" TextWrapping="Wrap" TextAlignment="Center"
+               VerticalAlignment="Center" Margin="20,0,20,20"
+               Text="Drop files on the island to hold them here, then drag them out into any app or folder later."/>
+    <ScrollViewer Grid.Row="1" Margin="0,8,0,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+      <ItemsControl x:Name="List">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+      </ItemsControl>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

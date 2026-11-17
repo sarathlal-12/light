@@ -1,0 +1,96 @@
+﻿<UserControl x:Class="DotLight.Knobs.ConvertKnob"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+
+    <!-- Drop zone -->
+    <Border Height="44" CornerRadius="10" Background="{StaticResource Surface}" Cursor="Hand" MouseLeftButtonUp="Browse_Click">
+      <Grid>
+        <Rectangle Stroke="#50FFFFFF" StrokeDashArray="4 3" StrokeThickness="1" RadiusX="10" RadiusY="10"/>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+          <TextBlock FontFamily="{StaticResource Icons}" Text="&#xE898;" FontSize="13" Foreground="{DynamicResource Orange}"
+                     VerticalAlignment="Center" Margin="0,0,8,0"/>
+          <TextBlock Text="Drop images on the island, or click" Foreground="{StaticResource Muted}" FontSize="11"
+                     VerticalAlignment="Center"/>
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- Target format. "Same" keeps the format (for resizing, compressing or cleaning photos); PDF puts every image in one file. -->
+    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,8,0,0">
+      <StackPanel.Resources>
+        <Style TargetType="RadioButton" BasedOn="{StaticResource Chip}">
+          <Setter Property="Margin" Value="0,0,2,0"/>
+        </Style>
+      </StackPanel.Resources>
+      <RadioButton GroupName="fmt" Tag="same" Content="Same" ToolTip="Keep the format: just resize, compress or clean" Checked="Format_Checked"/>
+      <RadioButton GroupName="fmt" Tag="png" Content="PNG" IsChecked="True" Checked="Format_Checked"/>
+      <RadioButton GroupName="fmt" Tag="jpg" Content="JPG" Checked="Format_Checked"/>
+      <RadioButton GroupName="fmt" Tag="pdf" Content="PDF" ToolTip="All images in one PDF" Checked="Format_Checked"/>
+      <RadioButton GroupName="fmt" Tag="ico" Content="ICO" Checked="Format_Checked"/>
+      <RadioButton GroupName="fmt" Tag="gif" Content="GIF" Checked="Format_Checked"/>
+      <RadioButton GroupName="fmt" Tag="bmp" Content="BMP" Checked="Format_Checked"/>
+      <RadioButton GroupName="fmt" Tag="tif" Content="TIFF" Checked="Format_Checked"/>
+    </StackPanel>
+
+    <!-- Options -->
+    <StackPanel Grid.Row="2" Margin="1,7,0,0">
+      <Grid>
+        <StackPanel x:Name="QualityRow" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Visibility="Collapsed"
+                    ToolTip="Lower = smaller file">
+          <TextBlock Text="Quality" Foreground="{StaticResource Muted}" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0"/>
+          <Slider x:Name="Quality" Foreground="{DynamicResource Orange}" Width="70" Minimum="30" Maximum="100" Value="90" IsSnapToTickEnabled="True" TickFrequency="1"
+                  VerticalAlignment="Center"/>
+          <TextBlock Text="{Binding Value, ElementName=Quality}" FontSize="11" Width="24" Margin="6,0,0,0" VerticalAlignment="Center"/>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+          <TextBlock Text="Max width" Foreground="{StaticResource Muted}" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,0"/>
+          <TextBox x:Name="MaxWidthBox" Width="54" Padding="7,3" FontSize="11" ToolTip="Leave empty to keep the original size"/>
+          <TextBlock Text="px" Foreground="{StaticResource Muted}" FontSize="11" VerticalAlignment="Center" Margin="5,0,0,0"/>
+        </StackPanel>
+      </Grid>
+      <DockPanel Margin="0,6,0,0">
+        <ToggleButton x:Name="StripSwitch" DockPanel.Dock="Right" Style="{StaticResource Switch}" Click="Strip_Click" VerticalAlignment="Center"/>
+        <TextBlock Text="Remove location and camera info" Foreground="{StaticResource Muted}" FontSize="11" VerticalAlignment="Center"
+                   ToolTip="Strips GPS position, camera model and other hidden details before you share a photo"/>
+      </DockPanel>
+    </StackPanel>
+
+    <!-- Files -->
+    <Grid Grid.Row="3" Margin="0,6,0,0">
+      <TextBlock x:Name="EmptyHint" Foreground="{StaticResource Muted}" FontSize="10.5" TextWrapping="Wrap" Margin="2,2,2,0"
+                 Text="Convert, resize, compress, clean photos or make a PDF. New files go next to the originals."/>
+      <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <ItemsControl x:Name="List">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Border Style="{StaticResource HoverRow}" Padding="8,4" MouseLeftButtonUp="Item_Click" ToolTip="{Binding Path}">
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                  </Grid.ColumnDefinitions>
+                  <TextBlock Text="{Binding Name}" FontSize="11.5" TextTrimming="CharacterEllipsis"/>
+                  <TextBlock Grid.Column="1" Text="{Binding Status}" Foreground="{StaticResource Muted}" FontSize="10.5"
+                             MaxWidth="150" TextTrimming="CharacterEllipsis" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+    </Grid>
+
+    <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,5,0,0">
+      <Button Style="{StaticResource TextBtn}" Content="Clear" Click="Clear_Click" Margin="0,0,5,0"/>
+      <Button x:Name="ConvertBtn" Style="{StaticResource AccentBtn}" Background="{DynamicResource Orange}" Content="Convert" Click="Convert_Click" IsEnabled="False"/>
+    </StackPanel>
+  </Grid>
+</UserControl>

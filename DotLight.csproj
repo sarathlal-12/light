@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>light</AssemblyName>
+    <RootNamespace>DotLight</RootNamespace>
+    <Product>.light</Product>
+    <Version>0.1.0</Version>
+    <ApplicationIcon>Assets\light.ico</ApplicationIcon>
+    <StartupObject>DotLight.Program</StartupObject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\light.ico" LogicalName="light.ico" />
+  </ItemGroup>
+
+  <!-- WinForms is only used for the tray icon; keep its names out of the global namespace so they don't clash with WPF. -->
+  <ItemGroup>
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Velopack" Version="1.2.161" />
+  </ItemGroup>
+
+</Project>

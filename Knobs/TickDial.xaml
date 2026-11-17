@@ -1,0 +1,36 @@
+﻿<UserControl x:Class="DotLight.Knobs.TickDial"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Height="28" IsHitTestVisible="False">
+  <!-- A knob you turn: fine tick marks slide past a fixed centre line, the value sits beside it. -->
+  <Grid>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="Auto"/>
+      <ColumnDefinition Width="*"/>
+      <ColumnDefinition Width="Auto"/>
+    </Grid.ColumnDefinitions>
+
+    <TextBlock x:Name="Glyph" FontFamily="{StaticResource Icons}" FontSize="12" Foreground="White"
+               VerticalAlignment="Center" Margin="11,0,9,0"/>
+
+    <Grid Grid.Column="1" ClipToBounds="True" VerticalAlignment="Center" Height="16">
+      <Rectangle x:Name="Ruler" Height="14" VerticalAlignment="Center">
+        <!-- fade the ruler out at both ends, like a dial curving away -->
+        <Rectangle.OpacityMask>
+          <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+            <GradientStop Color="#00000000" Offset="0"/>
+            <GradientStop Color="#FF000000" Offset="0.3"/>
+            <GradientStop Color="#FF000000" Offset="0.7"/>
+            <GradientStop Color="#00000000" Offset="1"/>
+          </LinearGradientBrush>
+        </Rectangle.OpacityMask>
+      </Rectangle>
+      <Border x:Name="Needle" Width="2" Height="16" CornerRadius="1" HorizontalAlignment="Center"
+              Background="{DynamicResource Green}"/>
+    </Grid>
+
+    <TextBlock x:Name="Value" Grid.Column="2" FontWeight="SemiBold" FontSize="11.5" Foreground="White"
+               MinWidth="36" TextAlignment="Right" VerticalAlignment="Center" Margin="9,0,12,1"
+               Typography.NumeralAlignment="Tabular"/>
+  </Grid>
+</UserControl>
