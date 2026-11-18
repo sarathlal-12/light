@@ -1996,7 +1996,7 @@ public partial class NotchWindow : Window
         if (Settings.Current.PhonePop && !fullscreenHidden) Chime.Done();
         if (IsOpen || fullscreenHidden || state is Island.Alarm or Island.Agent) return; // it's in the Phone tab
         phoneShown = n;
-        string who = n.App == "Phone" ? n.Title : $"{n.App} · {n.Title}";
+        string who = n.App == "Phone" || n.App.Equals(n.Title, StringComparison.OrdinalIgnoreCase) ? n.Title : $"{n.App} · {n.Title}";
         if (n.IsCall)
         {
             CallName.Text = n.Title;
@@ -2018,7 +2018,7 @@ public partial class NotchWindow : Window
         string lead = n.App == "Phone" ? n.Title : n.App; // the app's letter, even when the phone hid the content
         PhoneBadgeText.FontFamily = n.IsCall ? (FontFamily)FindResource("Icons") : new FontFamily("Segoe UI");
         PhoneBadgeText.Text = n.IsCall ? "\uE717" : lead.Length > 0 ? lead[..1].ToUpperInvariant() : "\u2022";
-        PhoneTitle.Text = n.IsCall ? $"Call · {n.Title}" : n.App == "Phone" ? n.Title : $"{n.App} · {n.Title}";
+        PhoneTitle.Text = n.IsCall ? $"Call · {n.Title}" : n.App == "Phone" || n.App.Equals(n.Title, StringComparison.OrdinalIgnoreCase) ? n.Title : $"{n.App} · {n.Title}";
         PhoneBody.Text = n.IsCall ? "Incoming call"
             : (Settings.Current.PhoneShowMessage || n.App == "Phone") && n.Body.Length > 0 ? n.Body // "1 new notification" isn't private
             : n.Code != null ? "Has a code" : "New message";

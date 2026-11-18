@@ -78,7 +78,7 @@ public partial class PhoneKnob : UserControl
         top.Children.Add(time);
         top.Children.Add(new TextBlock
         {
-            Text = n.IsCall ? $"Call · {n.Title}" : n.App == "Phone" ? n.Title : $"{n.App} · {n.Title}",
+            Text = n.IsCall ? $"Call · {n.Title}" : n.App == "Phone" || n.App.Equals(n.Title, StringComparison.OrdinalIgnoreCase) ? n.Title : $"{n.App} · {n.Title}",
             FontWeight = FontWeights.SemiBold, FontSize = 11.5, TextTrimming = TextTrimming.CharacterEllipsis,
         });
         text.Children.Add(top);
