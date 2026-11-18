@@ -4,6 +4,7 @@
   <Grid>
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
       <RowDefinition Height="*"/>
     </Grid.RowDefinitions>
     <DockPanel>
@@ -14,9 +15,10 @@
         <TextBlock x:Name="Subtitle" Text="Your sessions, live" Foreground="{StaticResource Muted}" FontSize="10"/>
       </StackPanel>
     </DockPanel>
-    <TextBlock x:Name="EmptyHint" Grid.Row="1" Foreground="{StaticResource Muted}" FontSize="11" TextWrapping="Wrap" TextAlignment="Center"
+    <StackPanel x:Name="Rings" Grid.Row="1" Orientation="Horizontal" Margin="0,10,0,2"/>
+    <TextBlock x:Name="EmptyHint" Grid.Row="2" Foreground="{StaticResource Muted}" FontSize="11" TextWrapping="Wrap" TextAlignment="Center"
                VerticalAlignment="Center" Margin="20,0,20,20"/>
-    <ScrollViewer Grid.Row="1" Margin="0,6,0,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+    <ScrollViewer Grid.Row="2" Margin="0,6,0,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
       <StackPanel x:Name="Rows"/>
     </ScrollViewer>
   </Grid>

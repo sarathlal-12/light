@@ -25,6 +25,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Assets\light.ico" LogicalName="light.ico" />
+    <Resource Include="Assets\Fonts\*.ttf" />
   </ItemGroup>
 
   <!-- WinForms is only used for the tray icon; keep its names out of the global namespace so they don't clash with WPF. -->

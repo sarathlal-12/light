@@ -126,7 +126,7 @@ public partial class MusicKnob : UserControl
         Player.Visibility = Visibility.Visible;
         TitleText.Text = props.Title;
         ArtistText.Text = string.IsNullOrWhiteSpace(props.Artist) ? props.AlbumTitle : props.Artist;
-        AppText.Text = FriendlyAppName(s.SourceAppUserModelId).ToUpperInvariant();
+        AppText.Text = FriendlyAppName(s.SourceAppUserModelId) + " · playing";
 
         PrevBtn.IsEnabled = info.Controls.IsPreviousEnabled;
         NextBtn.IsEnabled = info.Controls.IsNextEnabled;

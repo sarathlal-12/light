@@ -42,7 +42,11 @@ static class PhoneNotes
                     lastOrder = sqlite3_column_int64(st, 0);
                 return found;
             }
-            const string sql = "select n.[Order], n.Payload from Notification n join NotificationHandler h on h.RecordId = n.HandlerId " +
+            // Phone Link registers each phone app with Windows (…!YourPhoneNotifications_net.whatsapp.WhatsApp)
+            // and keeps its proper name ("WhatsApp"); calls come from …!YourPhoneCalling.
+            const string sql = "select n.[Order], n.Payload, h.PrimaryId, " +
+                               "(select a.AssetValue from HandlerAssets a where a.HandlerId = h.RecordId and a.AssetKey = 'DisplayName') " +
+                               "from Notification n join NotificationHandler h on h.RecordId = n.HandlerId " +
                                "where n.[Order] > ?1 and n.Type = 'toast' and h.PrimaryId like 'Microsoft.YourPhone%' order by n.[Order]";
             if (sqlite3_prepare_v2(db, Utf8(sql), -1, out st, IntPtr.Zero) != 0) return found;
             sqlite3_bind_int64(st, 1, lastOrder);
@@ -53,7 +57,10 @@ static class PhoneNotes
                 if (n <= 0 || n > 256_000) continue;
                 var bytes = new byte[n];
                 Marshal.Copy(sqlite3_column_blob(st, 1), bytes, 0, n);
-                if (Parse(Encoding.UTF8.GetString(bytes)) is { } note) found.Add(note);
+                string handler = Text(st, 2) ?? "";
+                string? appName = Text(st, 3);
+                if (Parse(Encoding.UTF8.GetString(bytes), AppFrom(handler, appName), handler.EndsWith("!YourPhoneCalling", StringComparison.OrdinalIgnoreCase)) is { } note)
+                    found.Add(note);
             }
         }
         catch { }
@@ -65,8 +72,29 @@ static class PhoneNotes
         return found;
     }
 
-    /// <summary>Reads a toast: the app (attribution or header), the sender, and the message.</summary>
-    internal static PhoneNote? Parse(string xml)
+    static string? Text(IntPtr st, int col)
+    {
+        var p = sqlite3_column_text(st, col);
+        return p == IntPtr.Zero ? null : Marshal.PtrToStringUTF8(p);
+    }
+
+    /// <summary>The phone app's name: what Phone Link stored ("WhatsApp"), else the end of its id ("…net.whatsapp.WhatsApp").</summary>
+    internal static string? AppFrom(string handler, string? displayName)
+    {
+        var name = displayName?.Trim('‎', '‏', ' ');
+        if (!string.IsNullOrEmpty(name) && !name.StartsWith("ms-resource", StringComparison.OrdinalIgnoreCase)) return name;
+        const string tag = "YourPhoneNotifications_";
+        int i = handler.IndexOf(tag, StringComparison.OrdinalIgnoreCase);
+        if (i < 0) return null;
+        var id = handler[(i + tag.Length)..];
+        var last = id[(id.LastIndexOf('.') + 1)..];
+        return last.Length == 0 ? null : char.ToUpperInvariant(last[0]) + last[1..];
+    }
+
+    static readonly Regex Placeholder = new(@"^\d+ new notifications?$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    /// <summary>Reads a toast: the app (from Phone Link, the attribution or the header), the sender, and the message.</summary>
+    internal static PhoneNote? Parse(string xml, string? appHint = null, bool isCall = false)
     {
         try
         {
@@ -78,9 +106,11 @@ static class PhoneNotes
                              .Select(t => t.Value.Trim()).Where(s => s.Length > 0).ToList();
             if (lines.Count == 0) return null;
             string? header = x.Descendants().FirstOrDefault(e => e.Name.LocalName == "header")?.Attribute("title")?.Value;
-            string app = (attribution ?? header ?? "Phone").Trim();
+            string app = (appHint ?? attribution ?? header ?? "Phone").Trim();
             string title = lines[0], body = string.Join(" ", lines.Skip(1));
-            bool call = (string?)x.Attribute("scenario") == "incomingCall" ||
+            // The phone hid the content (iPhone "Show Previews" isn't Always): all we get is "1 new notification".
+            if (lines.Count == 1 && Placeholder.IsMatch(title)) { body = title; title = app; app = "Phone"; }
+            bool call = isCall || (string?)x.Attribute("scenario") == "incomingCall" ||
                         ((string?)x.Attribute("launch") ?? "").Contains("call", StringComparison.OrdinalIgnoreCase) && lines.Any(l => l.Contains("call", StringComparison.OrdinalIgnoreCase));
             return new PhoneNote(app, title, body, call, FindCode(title + " " + body), DateTime.Now);
         }
@@ -105,6 +135,7 @@ static class PhoneNotes
     [DllImport("winsqlite3.dll")] static extern int sqlite3_step(IntPtr stmt);
     [DllImport("winsqlite3.dll")] static extern long sqlite3_column_int64(IntPtr stmt, int i);
     [DllImport("winsqlite3.dll")] static extern IntPtr sqlite3_column_blob(IntPtr stmt, int i);
+    [DllImport("winsqlite3.dll")] static extern IntPtr sqlite3_column_text(IntPtr stmt, int i);
     [DllImport("winsqlite3.dll")] static extern int sqlite3_column_bytes(IntPtr stmt, int i);
     [DllImport("winsqlite3.dll")] static extern int sqlite3_finalize(IntPtr stmt);
 }

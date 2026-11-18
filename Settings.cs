@@ -53,6 +53,8 @@ class Settings
 
     // Moments that can be switched off in Look > Features (all on by default).
     public bool ShotMoment { get; set; } = true;
+    /// <summary>The "now playing" popup when a song or video changes.</summary>
+    public bool SongPopup { get; set; } = true;
     public bool PrivacyDots { get; set; } = true;
     public bool PowerMoment { get; set; } = true;
     public bool DownloadMoment { get; set; } = true;

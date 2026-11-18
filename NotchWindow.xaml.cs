@@ -21,9 +21,9 @@ namespace DotLight;
 /// </summary>
 public partial class NotchWindow : Window
 {
-    enum Island { Idle, Music, Song, Copied, Smart, Dial, Timer, Alarm, Agent, AgentDone, Shot, Phone, PhoneCode, Call, Open }
+    enum Island { Idle, Music, Song, Copied, Smart, Dial, Timer, Alarm, Agent, AgentDone, Shot, Phone, PhoneCode, Call, Download, Power, Open }
 
-    const double Gap = 3, SideGap = 10, MaxRadius = 34;
+    const double Gap = 3, SideGap = 10, MaxRadius = 48;
 
     public static readonly (string Key, string Label)[] Positions =
     {
@@ -68,19 +68,21 @@ public partial class NotchWindow : Window
         return s switch
         {
             Island.Music => new Size(150, 20),
-            Island.Song => new Size(300, 54),
+            Island.Song => new Size(460, 220),
             Island.Copied => new Size(copiedWidth, 32),
-            Island.Dial => new Size(240, 32),
+            Island.Dial => new Size(460, 220),
             Island.Smart => new Size(300, 40),
             Island.Timer => new Size(172, 28),
-            Island.Alarm => new Size(330, 136),
-            Island.Agent => new Size(370, 152),
+            Island.Alarm => new Size(460, 220),
+            Island.Agent => new Size(460, 220),
             Island.AgentDone => new Size(agentDoneWidth, 32),
-            Island.Shot => new Size(360, 136),
+            Island.Shot => new Size(460, 220),
             Island.Phone => new Size(320, 52),
-            Island.PhoneCode => new Size(350, 140),
-            Island.Call => new Size(380, 112),
-            _ => new Size(340, 264),
+            Island.PhoneCode => new Size(460, 220),
+            Island.Call => new Size(460, 220),
+            Island.Download => new Size(460, 220),
+            Island.Power => new Size(460, 220),
+            _ => new Size(760, 460),
         };
     }
 
@@ -147,12 +149,12 @@ public partial class NotchWindow : Window
     {
         InitializeComponent();
         BuildWave(CompactWave, 4, 9);
-        BuildWave(MomentWave, 4, 14);
-        BuildWave(Music.WavePanel, 4, 11);
+        BuildWave(MomentWave, 4, 26, 4, 1.5);
+        BuildWave(Music.WavePanel, 28, 34, 5, 2);
 
         // Opens the instant the cursor reaches the island or the top edge.
         collapseDelay.Tick += (_, _) => { collapseDelay.Stop(); if (!ShouldStayOpen()) Collapse(); };
-        edgeWatch.Tick += (_, _) => { if (!IsOpen && !fullscreenHidden && state is not (Island.Dial or Island.Smart or Island.Alarm or Island.Agent or Island.Shot or Island.Phone or Island.PhoneCode or Island.Call) && !dragging && CursorAtEdge()) Expand(byKey: false); };
+        edgeWatch.Tick += (_, _) => { if (!IsOpen && !fullscreenHidden && state is not (Island.Dial or Island.Smart or Island.Alarm or Island.Agent or Island.Shot or Island.Phone or Island.PhoneCode or Island.Call or Island.Download or Island.Power) && !dragging && CursorAtEdge()) Expand(byKey: false); };
 
         // Resting face: the clock ticks over, a pinned note shows instead.
         clockTick.Tick += (_, _) => UpdateClock();
@@ -219,7 +221,7 @@ public partial class NotchWindow : Window
         trimIdle.Tick += (_, _) => { if (!IsOpen && !Shelf.DraggingOut) MemoryTrim.Now(); };
         trimIdle.Start();
         trimSoon.Start();
-        momentEnd.Tick += (_, _) => { momentEnd.Stop(); if (state is Island.Song or Island.Copied or Island.Smart or Island.Dial or Island.AgentDone or Island.Shot or Island.Phone or Island.PhoneCode or Island.Call) { momentDragFile = null; Morph(Resting); } };
+        momentEnd.Tick += (_, _) => { momentEnd.Stop(); if (state is Island.Song or Island.Copied or Island.Smart or Island.Dial or Island.AgentDone or Island.Shot or Island.Phone or Island.PhoneCode or Island.Call or Island.Download or Island.Power) { momentDragFile = null; Morph(Resting); } };
         panelDialHide.Tick += (_, _) => { panelDialHide.Stop(); PanelDialBox.BeginAnimation(OpacityProperty, Ease(0, 220)); };
 
         // Mouse wheel = turning a knob (volume, Shift = seek, clipboard = flip through clips).
@@ -243,14 +245,14 @@ public partial class NotchWindow : Window
         Shell.MouseEnter += (_, _) =>
         {
             collapseDelay.Stop();
-            if (state is Island.Smart or Island.Shot or Island.Phone or Island.PhoneCode or Island.Call) { momentEnd.Stop(); return; } // hold it so it can be clicked or dragged
+            if (state is Island.Smart or Island.Shot or Island.Phone or Island.PhoneCode or Island.Call or Island.Download or Island.Power) { momentEnd.Stop(); return; } // hold it so it can be clicked or dragged
             if (state is Island.Alarm or Island.Agent) return;
             if (!IsOpen) Expand(byKey: false);
         };
         Shell.MouseLeave += (_, _) =>
         {
             if (IsOpen) collapseDelay.Start();
-            else if (state is Island.Smart or Island.Shot or Island.Phone or Island.PhoneCode or Island.Call) { momentEnd.Interval = TimeSpan.FromMilliseconds(1500); momentEnd.Start(); }
+            else if (state is Island.Smart or Island.Shot or Island.Phone or Island.PhoneCode or Island.Call or Island.Download or Island.Power) { momentEnd.Interval = TimeSpan.FromMilliseconds(1500); momentEnd.Start(); }
         };
 
         Deactivated += (_, _) => { if (IsOpen && !App.DialogOpen) Collapse(); };
@@ -585,6 +587,8 @@ public partial class NotchWindow : Window
         PhoneMoment.IsHitTestVisible = to == Island.Phone;
         PhoneCodeMoment.IsHitTestVisible = to == Island.PhoneCode;
         CallMoment.IsHitTestVisible = to == Island.Call;
+        SongMoment.IsHitTestVisible = to == Island.Song;
+        DownloadMoment.IsHitTestVisible = to == Island.Download;
         AlarmMoment.IsHitTestVisible = to == Island.Alarm;
         UpdateIdleLook();
         // Closed panel is Hidden (still laid out, so opening never hitches, but invisible to
@@ -671,6 +675,8 @@ public partial class NotchWindow : Window
         Island.Phone => PhoneMoment,
         Island.PhoneCode => PhoneCodeMoment,
         Island.Call => CallMoment,
+        Island.Download => DownloadMoment,
+        Island.Power => PowerMoment,
         Island.Open => Full,
         _ => null,
     };
@@ -830,20 +836,20 @@ public partial class NotchWindow : Window
         if (v == null) return;
         int pct = (int)Math.Round(v.Value.Level * 100);
         string glyph = v.Value.Muted ? "\uE74F" : pct < 34 ? "\uE993" : pct < 67 ? "\uE994" : "\uE995";
-        ShowDial(glyph, $"{pct}%", pct / 2.0);
+        ShowDial(glyph, $"{pct}", pct / 2.0, "Volume", pct / 100.0);
     }
 
     async Task SeekDial(int notches)
     {
         var at = await Music.SeekBy(notches * 5);
-        if (at == null) { ShowDial("\uE916", "can't seek", 0); return; }
+        if (at == null) { ShowDial("\uE916", "can't seek", 0, "Seek"); return; }
         var t = at.Value;
         string text = t.TotalHours >= 1 ? t.ToString(@"h\:mm\:ss") : $"{(int)t.TotalMinutes}:{t.Seconds:00}";
-        ShowDial("\uE916", text, t.TotalSeconds / 5);
+        ShowDial("\uE916", text, t.TotalSeconds / 5, "Seek");
     }
 
     /// <summary>On the closed island the island itself becomes the dial; on the open panel a small dial floats at the bottom.</summary>
-    void ShowDial(string glyph, string value, double ticks)
+    void ShowDial(string glyph, string value, double ticks, string label = "Volume", double? level = null)
     {
         if (IsOpen)
         {
@@ -853,7 +859,23 @@ public partial class NotchWindow : Window
             panelDialHide.Start();
             return;
         }
-        Dial.Show(glyph, value, ticks);
+        DialGlyph.Text = glyph;
+        DialLabel.Text = label;
+        DialValue.Text = value;
+        if (level is double l)
+        {
+            DialBars.Visibility = Visibility.Visible;
+            Dial.Visibility = Visibility.Collapsed;
+            DrawDialBars(l);
+        }
+        else
+        {
+            DialBars.Visibility = Visibility.Collapsed;
+            Dial.Visibility = Visibility.Visible;
+            Dial.Glyph.Visibility = Visibility.Collapsed;
+            Dial.Value.Visibility = Visibility.Collapsed;
+            Dial.Show(glyph, value, ticks);
+        }
         FlashGlow(0.7);
         if (state != Island.Dial) Morph(Island.Dial);
         momentEnd.Stop();
@@ -988,17 +1010,41 @@ public partial class NotchWindow : Window
         MomentArtist.Text = artist;
         MomentArt.ImageSource = cover;
         CompactArt.ImageSource = cover;
-        ShowMoment(Island.Song, 3200);
+        SongPos.Text = Music.PosText.Text;
+        SongDur.Text = Music.DurText.Text;
+        double done = Music.Seek.Maximum > 0 ? Math.Clamp(Music.Seek.Value / Music.Seek.Maximum, 0, 1) : 0;
+        SongDone.Width = new GridLength(done, GridUnitType.Star);
+        SongLeft.Width = new GridLength(1 - done, GridUnitType.Star);
+        SongPlay.Content = Music.PlayBtn.Content;
+
+        // Shorts mode: swiping through Shorts or Reels changes the "song" every few seconds. Show the
+        // first one, then stay quiet while changes keep coming less than 45 seconds apart.
+        var now = DateTime.Now;
+        bool swiping = now - lastTrackAt < TimeSpan.FromSeconds(45);
+        lastTrackAt = now;
+        if (!Settings.Current.SongPopup || swiping) return;
+        ShowMoment(Island.Song, 4000);
     }
 
-    static void BuildWave(Panel panel, int bars, double tall)
+    DateTime lastTrackAt = DateTime.MinValue;
+
+    void SongPrev_Click(object sender, RoutedEventArgs e) { e.Handled = true; draggedOut = true; Music.PrevBtn.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); }
+    void SongNext_Click(object sender, RoutedEventArgs e) { e.Handled = true; draggedOut = true; Music.NextBtn.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); }
+    void SongPlay_Click(object sender, RoutedEventArgs e)
+    {
+        e.Handled = true; draggedOut = true;
+        Music.PlayBtn.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.BeginInvoke(() => SongPlay.Content = Music.PlayBtn.Content, DispatcherPriority.Background);
+    }
+
+    static void BuildWave(Panel panel, int bars, double tall, double width = 2, double gap = 1)
     {
         for (int i = 0; i < bars; i++)
         {
             var bar = new Rectangle
             {
-                Width = 2, Height = tall, Margin = new Thickness(1, 0, 1, 0),
-                RadiusX = 1, RadiusY = 1,
+                Width = width, Height = tall, Margin = new Thickness(gap, 0, gap, 0),
+                RadiusX = width / 2, RadiusY = width / 2,
                 RenderTransformOrigin = new Point(0.5, 0.5),
                 RenderTransform = new ScaleTransform(1, 0.3),
             };
@@ -1150,7 +1196,7 @@ public partial class NotchWindow : Window
             }
             else
             {
-                tab.Background = Brushes.Transparent;
+                tab.SetResourceReference(BackgroundProperty, "ChipBg");
                 tab.SetResourceReference(ForegroundProperty, "Muted");
             }
         }
@@ -1275,6 +1321,7 @@ public partial class NotchWindow : Window
     void OnTimerFinished()
     {
         alarmAt = DateTime.Now;
+        AlarmSub.Text = $"{Settings.Current.TimerMinutes} minute session done. Take a short break.";
         Chime.Play();
         alarmPulse.Start();
         FlashGlow(1);
@@ -1375,7 +1422,7 @@ public partial class NotchWindow : Window
                 CamDot.Visibility = c ? Visibility.Visible : Visibility.Collapsed;
                 MicDot.Visibility = m ? Visibility.Visible : Visibility.Collapsed;
                 privacyWatch.Stop();
-                HeadCam.Visibility = CamDot.Visibility; HeadMic.Visibility = MicDot.Visibility;
+                HeadCam.Visibility = CamDot.Visibility; HeadMic.Visibility = MicDot.Visibility; PrivacyApp.Text = c ? "Zoom" : "Discord";
                 PrivacyHead.ToolTip = string.Join(Environment.NewLine, new[] { c ? "Camera · Zoom" : null, m ? "Mic · Discord" : null }.Where(x => x != null));
                 PrivacyHead.Visibility = c || m ? Visibility.Visible : Visibility.Collapsed;
                 privacyShown = c || m;
@@ -1387,13 +1434,24 @@ public partial class NotchWindow : Window
                 var pn = new PhoneNote(pa[0], pa[1], pa.Length > 2 ? pa[2] : "", pa.Length > 3 && pa[3] == "call",
                     PhoneNotes.FindCode(pa[1] + " " + (pa.Length > 2 ? pa[2] : "")), DateTime.Now);
                 PhoneInbox.Add(pn); ShowPhone(pn); return state + " code=" + (pn.Code ?? "none");
-            case "phonexml": // phonexml <file with a toast payload>
-                return PhoneNotes.Parse(File.ReadAllText(arg))?.ToString() ?? "null";
+            case "phonexml": // phonexml <file with a toast payload>|<app name from Phone Link>
+                var px = arg.Split('|');
+                var parsed = PhoneNotes.Parse(File.ReadAllText(px[0]), px.Length > 1 ? px[1] : null);
+                if (parsed != null) ShowPhone(parsed);
+                return parsed?.ToString() ?? "null";
+            case "musicdemo": // the player filled with placeholder text (test runs never read real media)
+                Music.Empty.Visibility = Visibility.Collapsed; Music.Player.Visibility = Visibility.Visible;
+                Music.TitleText.Text = "[Song title]"; Music.ArtistText.Text = "[Artist]"; Music.AppText.Text = "Spotify · playing";
+                Music.PosText.Text = "1:24"; Music.DurText.Text = "3:22"; Music.Seek.Value = 0.42; Music.PlayBtn.Content = "";
+                Animate(Music.WavePanel, true); DriveWave(Music.WavePanel, 0.7); return "demo";
             case "phonelink": // phonelink Name|battery
                 var pl = arg.Split('|');
                 OnPhone(new PhoneLink(pl[0], pl.Length > 1 ? int.Parse(pl[1]) : null)); return state.ToString();
             case "clipon": Settings.Current.PhoneClipCode = arg; return phoneClip.Start() ?? "listening";
             case "phonesetup": Settings.Current.PhoneClipCode ??= PhoneClipListener.NewCode(); ShowKnob("phone"); PhoneK.ShowSetup(); return "setup";
+            case "power": var pw = arg.Split(' '); ShowPower(int.Parse(pw[0]), pw.Length > 1 && pw[1] == "low"); return state.ToString();
+            case "song": OnTrackChanged("[Song title]", "[Artist]", null); return state.ToString();
+            case "vol": ShowDial("\uE995", arg, double.Parse(arg) / 2, "Volume", double.Parse(arg) / 100); return state.ToString();
             case "snap": return snap(arg);
             default: return "unknown";
         }
@@ -1638,6 +1696,8 @@ public partial class NotchWindow : Window
         var latest = agentNeeds.Values.Last();
         AgentNeedsText.Text = latest.Project.Length > 0 ? $"{latest.Project} needs your OK to continue" : "Claude needs your OK to continue";
         AgentCount.Text = $"{agentNeeds.Count} waiting";
+        var others = agentNeeds.Values.Reverse().Skip(1).Select(a => a.Project).Where(p => p.Length > 0).Distinct().ToList();
+        AgentAlso.Text = others.Count > 0 ? "also waiting: " + string.Join(", ", others) : "";
         AgentCountBox.Visibility = agentNeeds.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
     }
 
@@ -1706,6 +1766,16 @@ public partial class NotchWindow : Window
     {
         shotClip = clip;
         ShotThumb.ImageSource = clip.Thumb;
+        ShotInfo.Text = "Picture";
+        try
+        {
+            if (clip.ImageFile != null)
+            {
+                var f = System.Windows.Media.Imaging.BitmapFrame.Create(new Uri(clip.ImageFile), System.Windows.Media.Imaging.BitmapCreateOptions.DelayCreation, System.Windows.Media.Imaging.BitmapCacheOption.None);
+                ShotInfo.Text = $"{f.PixelWidth} × {f.PixelHeight}";
+            }
+        }
+        catch { }
         if (IsOpen || fullscreenHidden) return;
         ShowMoment(Island.Shot, 5000);
     }
@@ -1714,7 +1784,7 @@ public partial class NotchWindow : Window
     {
         if (e.LeftButton != MouseButtonState.Pressed || OwnDrag) return;
         bool shot = state == Island.Shot && shotClip != null;
-        bool file = state == Island.Smart && momentDragFile != null && File.Exists(momentDragFile);
+        bool file = state is Island.Smart or Island.Download && momentDragFile != null && File.Exists(momentDragFile);
         if (!shot && !file) return;
         var d = e.GetPosition(this) - pressAt;
         if (Math.Abs(d.X) < SystemParameters.MinimumHorizontalDragDistance && Math.Abs(d.Y) < SystemParameters.MinimumVerticalDragDistance) return;
@@ -1750,6 +1820,7 @@ public partial class NotchWindow : Window
         HeadCam.Visibility = CamDot.Visibility;
         HeadMic.Visibility = MicDot.Visibility;
         PrivacyHead.ToolTip = string.Join(Environment.NewLine, parts);
+        PrivacyApp.Text = cam.Concat(mic).FirstOrDefault() ?? "";
         PrivacyHead.Visibility = any ? Visibility.Visible : Visibility.Collapsed;
 
         // the dots sit inside the closed island (a resting Line or Dot becomes a small pill to hold them)
@@ -1775,15 +1846,59 @@ public partial class NotchWindow : Window
         if (!Power.HasBattery) return;
         bool charging = Power.Charging;
         int pct = Power.Percent;
-        if (charging && !lastCharging && Settings.Current.PowerMoment)
-            ShowInfo("\uE945", "Green", $"Charging · {pct}%", 2600);
+        if (charging && !lastCharging && Settings.Current.PowerMoment) ShowPower(pct, low: false);
         if (charging) lowShown = false;
         else if (pct <= 15 && !lowShown && Settings.Current.PowerMoment)
         {
             lowShown = true;
-            ShowInfo("\uE7BA", "Orange", $"Battery low · {pct}%", 5000);
+            ShowPower(pct, low: true);
         }
         lastCharging = charging;
+    }
+
+    /// <summary>The charging widget: the level as rising bars, and the phone's battery beside it when it's connected.</summary>
+    void ShowPower(int pct, bool low)
+    {
+        var colour = low ? Palette.CoralBrush : Palette.LimeBrush;
+        PowerLabel.Text = low ? "Battery low" : "Charging";
+        PowerLabel.Foreground = colour;
+        PowerGlyph.Foreground = colour;
+        PowerGlyph.Text = low ? "\uE7BA" : "\uE945";
+        PowerPct.Text = pct.ToString();
+        DrawBars(PowerBars, 20, pct / 100.0, colour, rising: true);
+        var phone = PhoneInbox.Phone;
+        PowerPhone.Visibility = phone?.Battery is int ? Visibility.Visible : Visibility.Collapsed;
+        PowerPhoneText.Text = phone?.Battery is int b ? $"{phone.Name} {b}%" : "";
+        ShowMoment(Island.Power, low ? 5000 : 3500);
+    }
+
+    void DrawDialBars(double level) => DrawBars(DialBars, 41, level, Palette.LimeBrush, rising: false);
+
+    static readonly Brush BarOff = Palette.Brush(Color.FromRgb(0x2C, 0x2C, 0x2E));
+
+    /// <summary>A row of rounded bars filling the panel's width; the first <paramref name="level"/> of them lit.</summary>
+    static void DrawBars(Grid host, int count, double level, Brush on, bool rising)
+    {
+        if (host.ColumnDefinitions.Count != count)
+        {
+            host.Children.Clear();
+            host.ColumnDefinitions.Clear();
+            for (int i = 0; i < count; i++)
+            {
+                host.ColumnDefinitions.Add(new ColumnDefinition());
+                var bar = new Border { CornerRadius = new CornerRadius(rising ? 5 : 2), Margin = new Thickness(rising ? 2.5 : 2.2, 0, rising ? 2.5 : 2.2, 0), VerticalAlignment = VerticalAlignment.Bottom };
+                Grid.SetColumn(bar, i);
+                host.Children.Add(bar);
+            }
+        }
+        int lit = (int)Math.Round(level * count);
+        for (int i = 0; i < count; i++)
+        {
+            var bar = (Border)host.Children[i];
+            bar.Background = i < lit ? on : BarOff;
+            bar.Height = rising ? 34 + i * 3.4 : i == lit - 1 ? 92 : i % 5 == 0 ? 60 : 42;
+            if (!rising && i == lit - 1) bar.Background = Brushes.White;
+        }
     }
 
     // ---------- finished downloads ----------
@@ -1793,9 +1908,21 @@ public partial class NotchWindow : Window
     void ShowDownload(string path)
     {
         if (!Settings.Current.DownloadMoment) return;
-        var name = System.IO.Path.GetFileName(path);
-        var info = new SmartInfo(SmartKind.Download, $"Downloaded · {name}", "\uE896", new[] { new SmartAction("Show", Reveal: path) });
-        ShowSmart(info, path);
+        DlName.Text = System.IO.Path.GetFileName(path);
+        var ext = System.IO.Path.GetExtension(path).TrimStart('.').ToUpperInvariant();
+        DlExt.Text = ext.Length is > 0 and <= 4 ? ext : "FILE";
+        downloadShown = path;
+        momentDragFile = path;
+        ShowMoment(Island.Download, 6000);
+    }
+
+    string? downloadShown;
+
+    void DownloadShow_Click(object sender, RoutedEventArgs e)
+    {
+        e.Handled = true; draggedOut = true;
+        if (downloadShown != null) try { System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{downloadShown}\""); } catch { }
+        Morph(Resting);
     }
 
     // ---------- new version ----------
@@ -1882,15 +2009,18 @@ public partial class NotchWindow : Window
             CodeBadgeText.Text = n.App.Length > 0 ? n.App[..1].ToUpperInvariant() : "•";
             CodeTitle.Text = who;
             CodeText.Text = n.Code.Length == 6 ? n.Code[..3] + " " + n.Code[3..] : n.Code;
+            CodeBattery.Visibility = PhoneInbox.Phone?.Battery is int pb ? Visibility.Visible : Visibility.Collapsed;
+            CodeBatteryText.Text = PhoneInbox.Phone?.Battery is int pb2 ? $"{pb2}%" : "";
             ShowMoment(Island.PhoneCode, 12000);
             return;
         }
         PhoneBadge.Fill = Palette.LimeBrush;
+        string lead = n.App == "Phone" ? n.Title : n.App; // the app's letter, even when the phone hid the content
         PhoneBadgeText.FontFamily = n.IsCall ? (FontFamily)FindResource("Icons") : new FontFamily("Segoe UI");
-        PhoneBadgeText.Text = n.IsCall ? "\uE717" : n.App.Length > 0 ? n.App[..1].ToUpperInvariant() : "\u2022";
+        PhoneBadgeText.Text = n.IsCall ? "\uE717" : lead.Length > 0 ? lead[..1].ToUpperInvariant() : "\u2022";
         PhoneTitle.Text = n.IsCall ? $"Call · {n.Title}" : n.App == "Phone" ? n.Title : $"{n.App} · {n.Title}";
         PhoneBody.Text = n.IsCall ? "Incoming call"
-            : Settings.Current.PhoneShowMessage && n.Body.Length > 0 ? n.Body
+            : (Settings.Current.PhoneShowMessage || n.App == "Phone") && n.Body.Length > 0 ? n.Body // "1 new notification" isn't private
             : n.Code != null ? "Has a code" : "New message";
         PhoneButton.Content = n.Code != null ? $"Copy {n.Code}" : n.IsCall ? "Open" : "";
         PhoneButton.Visibility = n.Code != null || n.IsCall ? Visibility.Visible : Visibility.Collapsed;

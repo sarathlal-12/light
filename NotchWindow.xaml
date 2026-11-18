@@ -3,11 +3,11 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:k="clr-namespace:DotLight.Knobs"
         Title=".light"
-        Width="380" Height="290"
+        Width="800" Height="500"
         WindowStyle="None" AllowsTransparency="False" Background="Transparent"
         ResizeMode="NoResize" Topmost="True" ShowInTaskbar="False" ShowActivated="False"
         AllowDrop="True" Focusable="True"
-        FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="12"
+        FontFamily="{StaticResource Body}" FontSize="12"
         Foreground="{StaticResource Fg}"
         UseLayoutRounding="True"
         TextOptions.TextFormattingMode="Display" TextOptions.TextRenderingMode="Grayscale">
@@ -25,7 +25,7 @@
 
         <!-- Resting face: the time, or a pinned note -->
         <Grid x:Name="IdleFace" Opacity="0" IsHitTestVisible="False">
-          <TextBlock x:Name="IdleClock" FontFamily="Segoe UI Variable Display, Segoe UI" FontWeight="SemiBold" FontSize="10.5"
+          <TextBlock x:Name="IdleClock" FontFamily="{StaticResource Body}" FontWeight="SemiBold" FontSize="10.5"
                      Foreground="#D8FFFFFF" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,1"
                      TextAlignment="Center" Typography.NumeralAlignment="Tabular" LineHeight="11" LineStackingStrategy="BlockLineHeight"/>
           <DockPanel x:Name="IdleNote" Visibility="Collapsed" Margin="8,0,10,0">
@@ -42,37 +42,72 @@
           <Border x:Name="TimerEdge" Background="{DynamicResource Orange}" Height="1.5" VerticalAlignment="Bottom" HorizontalAlignment="Left"/>
           <TextBlock x:Name="TimerGlyph" FontFamily="{StaticResource Icons}" Text="&#xE916;" FontSize="11" Foreground="{DynamicResource Orange}"
                      HorizontalAlignment="Left" VerticalAlignment="Center" Margin="11,0,0,0"/>
-          <TextBlock x:Name="TimerText" FontFamily="Segoe UI Variable Display, Segoe UI" FontWeight="Bold" FontSize="13.5" Foreground="White"
+          <TextBlock x:Name="TimerText" FontFamily="{StaticResource Body}" FontWeight="Bold" FontSize="13.5" Foreground="White"
                      Typography.NumeralAlignment="Tabular" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,13,1"/>
         </Grid>
 
         <!-- Moment: timer finished -->
-        <Grid x:Name="AlarmMoment" Opacity="0" IsHitTestVisible="False" Margin="24,18,22,20">
+        <Grid x:Name="AlarmMoment" Opacity="0" IsHitTestVisible="False" Margin="28,24,26,24">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="128"/>
+          </Grid.ColumnDefinitions>
           <StackPanel>
-            <TextBlock Text="Focus timer" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource Orange}"/>
-            <TextBlock x:Name="AlarmText" Text="Time's up" FontFamily="Segoe UI Variable Display, Segoe UI" FontWeight="Bold" FontSize="34"
-                       Foreground="White" Margin="0,2,0,0"/>
-            <TextBlock Text="Nice work. Take a short break." FontSize="12" Foreground="{StaticResource Muted}" Margin="0,1,0,0"/>
+            <TextBlock Text="Focus timer" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource Orange}"/>
+            <TextBlock x:Name="AlarmText" Text="Time's up" FontWeight="Bold" FontSize="44" Foreground="White" Margin="0,2,0,0"/>
+            <TextBlock x:Name="AlarmSub" Text="Session done. Take a short break." FontSize="13" Foreground="{StaticResource Muted}" Margin="0,4,16,0"
+                       TextWrapping="Wrap"/>
           </StackPanel>
-          <Button Style="{StaticResource BigBtn}" Background="{DynamicResource Orange}" Content="Done" Width="96"
-                  HorizontalAlignment="Right" VerticalAlignment="Bottom" Click="AlarmDone_Click"/>
+          <Button Style="{StaticResource BigBtn}" Background="{DynamicResource Orange}" Content="Done" Width="104" Height="42"
+                  HorizontalAlignment="Left" VerticalAlignment="Bottom" Click="AlarmDone_Click"/>
+          <UniformGrid Grid.Column="1" Columns="5" Rows="5" Height="150" VerticalAlignment="Center">
+              <Border Background="{DynamicResource Orange}" CornerRadius="6" Margin="2.5"/>
+              <Border Background="{DynamicResource Orange}" CornerRadius="6" Margin="2.5"/>
+              <Border Background="{DynamicResource Orange}" CornerRadius="6" Margin="2.5"/>
+              <Border Background="{DynamicResource Orange}" CornerRadius="6" Margin="2.5"/>
+              <Border Background="{DynamicResource Orange}" CornerRadius="6" Margin="2.5"/>
+              <Border Background="{DynamicResource Orange}" CornerRadius="6" Margin="2.5"/>
+              <Border Background="{DynamicResource Orange}" CornerRadius="6" Margin="2.5"/>
+              <Border Background="{DynamicResource Orange}" CornerRadius="6" Margin="2.5"/>
+              <Border Background="{DynamicResource Orange}" CornerRadius="6" Margin="2.5"/>
+              <Border Background="{DynamicResource Orange}" CornerRadius="6" Margin="2.5"/>
+              <Border Background="{DynamicResource Orange}" CornerRadius="6" Margin="2.5"/>
+              <Border Background="{DynamicResource Orange}" CornerRadius="6" Margin="2.5"/>
+              <Border Background="{DynamicResource Orange}" CornerRadius="6" Margin="2.5"/>
+              <Border Background="{DynamicResource Orange}" CornerRadius="6" Margin="2.5"/>
+              <Border Background="{DynamicResource Orange}" CornerRadius="6" Margin="2.5"/>
+              <Border Background="{DynamicResource Orange}" CornerRadius="6" Margin="2.5"/>
+              <Border Background="{DynamicResource Orange}" CornerRadius="6" Margin="2.5"/>
+              <Border Background="{DynamicResource Orange}" CornerRadius="6" Margin="2.5"/>
+              <Border Background="{DynamicResource Orange}" CornerRadius="6" Margin="2.5"/>
+              <Border Background="{DynamicResource Orange}" CornerRadius="6" Margin="2.5"/>
+              <Border Background="{DynamicResource Orange}" CornerRadius="6" Margin="2.5"/>
+              <Border Background="{DynamicResource Orange}" CornerRadius="6" Margin="2.5"/>
+              <Border Background="{DynamicResource Orange}" CornerRadius="6" Margin="2.5"/>
+              <Border Background="{DynamicResource Orange}" CornerRadius="6" Margin="2.5"/>
+              <Border Background="{DynamicResource Orange}" CornerRadius="6" Margin="2.5"/>
+          </UniformGrid>
         </Grid>
 
         <!-- Claude Code needs your OK (stays until you look at it) -->
-        <Grid x:Name="AgentNeeds" Opacity="0" IsHitTestVisible="False" Margin="22,16,20,18">
+        <Grid x:Name="AgentNeeds" Opacity="0" IsHitTestVisible="False" Margin="28,24,28,24">
           <DockPanel VerticalAlignment="Top">
-            <Border x:Name="AgentCountBox" DockPanel.Dock="Right" Background="{StaticResource ChipBg}" CornerRadius="11" Padding="9,3" Visibility="Collapsed">
-              <TextBlock x:Name="AgentCount" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource Muted}"/>
+            <Border x:Name="AgentCountBox" DockPanel.Dock="Right" Background="{StaticResource ChipBg}" CornerRadius="13" Padding="10,4" Visibility="Collapsed">
+              <TextBlock x:Name="AgentCount" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource Muted}"/>
             </Border>
-            <StackPanel Orientation="Horizontal">
-              <Ellipse Width="8" Height="8" Fill="{DynamicResource Orange}" VerticalAlignment="Center"/>
-              <TextBlock Text="Claude Code" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource Orange}" Margin="7,0,0,1"/>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+              <Ellipse Width="9" Height="9" Fill="{DynamicResource Orange}" VerticalAlignment="Center"/>
+              <TextBlock Text="Claude Code" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource Orange}" Margin="8,0,0,1"/>
             </StackPanel>
           </DockPanel>
-          <TextBlock x:Name="AgentNeedsText" Text="Needs your OK" FontFamily="Segoe UI Variable Display, Segoe UI" FontWeight="Bold" FontSize="18"
-                     Foreground="White" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="48" Margin="0,26,0,0" VerticalAlignment="Top"/>
-          <Button Style="{StaticResource BigBtn}" Background="{DynamicResource Orange}" Content="Show" Width="96"
-                  HorizontalAlignment="Left" VerticalAlignment="Bottom" Click="AgentShow_Click"/>
+          <TextBlock x:Name="AgentNeedsText" Text="Needs your OK" FontWeight="Bold" FontSize="26" Foreground="White"
+                     TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="66" Margin="0,40,0,0" VerticalAlignment="Top"/>
+          <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom">
+            <Button Style="{StaticResource BigBtn}" Background="{DynamicResource Orange}" Content="Show terminal" Width="150" Height="44"
+                    Click="AgentShow_Click"/>
+            <TextBlock x:Name="AgentAlso" FontSize="13" Foreground="{StaticResource Muted}" Margin="12,0,0,1" VerticalAlignment="Center"
+                       TextTrimming="CharacterEllipsis" MaxWidth="220"/>
+          </StackPanel>
         </Grid>
 
         <!-- Moment: Claude Code finished -->
@@ -97,23 +132,49 @@
         </Grid>
 
         <!-- Moment: new song -->
-        <Grid x:Name="SongMoment" Opacity="0" IsHitTestVisible="False" Margin="8,0,16,0">
-          <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="Auto"/>
-          </Grid.ColumnDefinitions>
-          <Border Width="40" Height="40" CornerRadius="12" Background="{StaticResource Surface}" VerticalAlignment="Center">
-            <Border CornerRadius="12">
-              <Border.Background><ImageBrush x:Name="MomentArt" Stretch="UniformToFill"/></Border.Background>
+        <Grid x:Name="SongMoment" Opacity="0" IsHitTestVisible="False" Margin="28,26,28,22">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+          </Grid.RowDefinitions>
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="Auto"/>
+              <ColumnDefinition Width="*"/>
+              <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Border Width="78" Height="78" CornerRadius="18" Background="{StaticResource Surface}">
+              <Border CornerRadius="18">
+                <Border.Background><ImageBrush x:Name="MomentArt" Stretch="UniformToFill"/></Border.Background>
+              </Border>
             </Border>
-          </Border>
-          <StackPanel Grid.Column="1" Margin="11,0,8,0" VerticalAlignment="Center">
-            <TextBlock x:Name="MomentTitle" FontFamily="Segoe UI Variable Display, Segoe UI" FontWeight="Bold" FontSize="13.5"
-                       TextTrimming="CharacterEllipsis"/>
-            <TextBlock x:Name="MomentArtist" Foreground="{StaticResource Muted}" FontSize="11.5" TextTrimming="CharacterEllipsis" Margin="0,1,0,0"/>
+            <StackPanel Grid.Column="1" Margin="16,0,12,0" VerticalAlignment="Center">
+              <TextBlock x:Name="MomentTitle" FontWeight="Bold" FontSize="19" TextTrimming="CharacterEllipsis"/>
+              <TextBlock x:Name="MomentArtist" Foreground="{StaticResource Muted}" FontSize="14" TextTrimming="CharacterEllipsis" Margin="0,4,0,0"/>
+            </StackPanel>
+            <StackPanel x:Name="MomentWave" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center"/>
+          </Grid>
+          <DockPanel Grid.Row="1" VerticalAlignment="Center">
+            <TextBlock x:Name="SongPos" DockPanel.Dock="Left" FontSize="13" Foreground="{StaticResource Muted}" Typography.NumeralAlignment="Tabular" Width="44"/>
+            <TextBlock x:Name="SongDur" DockPanel.Dock="Right" FontSize="13" Foreground="{StaticResource Muted}" Typography.NumeralAlignment="Tabular" Width="44" TextAlignment="Right"/>
+            <Grid x:Name="SongTrack" Height="6" Margin="4,0">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition x:Name="SongDone" Width="0*"/>
+                <ColumnDefinition x:Name="SongLeft" Width="1*"/>
+              </Grid.ColumnDefinitions>
+              <Border Grid.ColumnSpan="2" Background="#2C2C2E" CornerRadius="3"/>
+              <Border Background="White" CornerRadius="3"/>
+            </Grid>
+          </DockPanel>
+          <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center">
+            <Button Style="{StaticResource PlayBtn}" Background="{StaticResource ChipBg}" Foreground="White" Width="44" Height="44" FontSize="14"
+                    Content="&#xE892;" ToolTip="Previous" Click="SongPrev_Click"/>
+            <Button x:Name="SongPlay" Style="{StaticResource PlayBtn}" Background="White" Foreground="Black" Width="50" Height="50" FontSize="17"
+                    Content="&#xE769;" ToolTip="Play / pause" Margin="22,0" Click="SongPlay_Click"/>
+            <Button Style="{StaticResource PlayBtn}" Background="{StaticResource ChipBg}" Foreground="White" Width="44" Height="44" FontSize="14"
+                    Content="&#xE893;" ToolTip="Next" Click="SongNext_Click"/>
           </StackPanel>
-          <StackPanel x:Name="MomentWave" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center"/>
         </Grid>
 
         <!-- Moment: copied -->
@@ -146,8 +207,27 @@
         </Grid>
 
         <!-- Moment: dial (mouse wheel over the closed island) -->
-        <Grid x:Name="DialMoment" Opacity="0" IsHitTestVisible="False">
-          <k:TickDial x:Name="Dial"/>
+        <Grid x:Name="DialMoment" Opacity="0" IsHitTestVisible="False" Margin="28,22,28,22">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+          </Grid.RowDefinitions>
+          <DockPanel>
+            <TextBlock x:Name="DialValue" DockPanel.Dock="Right" FontWeight="Bold" FontSize="30" Foreground="White" Typography.NumeralAlignment="Tabular"/>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+              <TextBlock x:Name="DialGlyph" FontFamily="{StaticResource Icons}" FontSize="17" Foreground="White" VerticalAlignment="Center"/>
+              <TextBlock x:Name="DialLabel" Text="Volume" FontWeight="Bold" FontSize="15" Foreground="White" Margin="9,0,0,1" VerticalAlignment="Center"/>
+            </StackPanel>
+          </DockPanel>
+          <Grid Grid.Row="1" Margin="0,10">
+            <Grid x:Name="DialBars" VerticalAlignment="Bottom" Height="92"/>
+            <k:TickDial x:Name="Dial" VerticalAlignment="Center" Visibility="Collapsed"/>
+          </Grid>
+          <DockPanel Grid.Row="2">
+            <TextBlock DockPanel.Dock="Right" Text="Shift + scroll seeks the song" FontSize="12" Foreground="{StaticResource Muted}"/>
+            <TextBlock Text="Scroll over the island" FontSize="12" Foreground="{StaticResource Muted}"/>
+          </DockPanel>
         </Grid>
 
         <!-- Moment: a phone notification (through Phone Link), a call, or a login code to copy -->
@@ -163,7 +243,7 @@
                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
           </Grid>
           <StackPanel Grid.Column="1" Margin="9,0,8,0" VerticalAlignment="Center">
-            <TextBlock x:Name="PhoneTitle" FontFamily="Segoe UI Variable Display, Segoe UI" FontWeight="SemiBold" FontSize="12"
+            <TextBlock x:Name="PhoneTitle" FontFamily="{StaticResource Body}" FontWeight="SemiBold" FontSize="12"
                        TextTrimming="CharacterEllipsis"/>
             <TextBlock x:Name="PhoneBody" Foreground="{StaticResource Muted}" FontSize="10.5" TextTrimming="CharacterEllipsis" Margin="0,1,0,0"/>
           </StackPanel>
@@ -172,69 +252,127 @@
         </Grid>
 
         <!-- Moment: a screenshot (or any image) was copied: drag it straight into any app -->
-        <Grid x:Name="ShotMoment" Opacity="0" IsHitTestVisible="False" Margin="14,14,20,14">
+        <Grid x:Name="ShotMoment" Opacity="0" IsHitTestVisible="False" Margin="22,22,24,22">
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="*"/>
           </Grid.ColumnDefinitions>
-          <Border Width="150" CornerRadius="20" Background="{StaticResource Surface}" BorderBrush="#40FFFFFF" BorderThickness="1.5">
-            <Border CornerRadius="18">
+          <Border Width="200" CornerRadius="26" Background="{StaticResource Surface}" BorderBrush="#3A3A3C" BorderThickness="1.5">
+            <Border CornerRadius="24">
               <Border.Background><ImageBrush x:Name="ShotThumb" Stretch="UniformToFill"/></Border.Background>
             </Border>
           </Border>
-          <Grid Grid.Column="1" Margin="16,4,0,2">
+          <Grid Grid.Column="1" Margin="20,2,0,0">
             <StackPanel>
-              <TextBlock Text="Screenshot" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource Blue}"/>
-              <TextBlock Text="Drag it into any app" FontFamily="Segoe UI Variable Display, Segoe UI" FontWeight="Bold" FontSize="18"
-                         Foreground="White" TextWrapping="Wrap" Margin="0,3,0,0"/>
+              <TextBlock Text="Screenshot" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource Blue}"/>
+              <TextBlock Text="Drag it into any app" FontWeight="Bold" FontSize="26" Foreground="White" TextWrapping="Wrap" Margin="0,6,0,0" LineHeight="30"/>
+              <TextBlock x:Name="ShotInfo" FontSize="13" Foreground="{StaticResource Muted}" Margin="0,6,0,0"/>
             </StackPanel>
-            <Border Background="{StaticResource ChipBg}" CornerRadius="16" Height="32" Padding="12,0" HorizontalAlignment="Left" VerticalAlignment="Bottom">
+            <Border Background="#0E2F3A" CornerRadius="20" Height="40" Padding="14,0" HorizontalAlignment="Left" VerticalAlignment="Bottom">
               <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <TextBlock FontFamily="{StaticResource Icons}" Text="&#xE7C2;" FontSize="12" Foreground="{DynamicResource Blue}" VerticalAlignment="Center"/>
-                <TextBlock Text="Hold and drag" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource Blue}" Margin="7,0,0,1" VerticalAlignment="Center"/>
+                <TextBlock FontFamily="{StaticResource Icons}" Text="&#xE7C2;" FontSize="14" Foreground="{DynamicResource Blue}" VerticalAlignment="Center"/>
+                <TextBlock Text="Hold and drag" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource Blue}" Margin="8,0,0,1" VerticalAlignment="Center"/>
               </StackPanel>
             </Border>
           </Grid>
         </Grid>
 
         <!-- Moment: a login code from the phone, big enough to read at a glance -->
-        <Grid x:Name="PhoneCodeMoment" Opacity="0" IsHitTestVisible="False" Margin="22,16,20,18">
+        <Grid x:Name="PhoneCodeMoment" Opacity="0" IsHitTestVisible="False" Margin="28,24,28,24">
           <DockPanel VerticalAlignment="Top">
-            <Grid Width="26" Height="26" DockPanel.Dock="Left">
+            <Border x:Name="CodeBattery" DockPanel.Dock="Right" Background="{StaticResource ChipBg}" CornerRadius="13" Height="26" Padding="10,0" Visibility="Collapsed">
+              <TextBlock x:Name="CodeBatteryText" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource Muted}" VerticalAlignment="Center"/>
+            </Border>
+            <Grid Width="30" Height="30" DockPanel.Dock="Left">
               <Ellipse Fill="{DynamicResource Green}"/>
-              <TextBlock x:Name="CodeBadgeText" FontWeight="Bold" FontSize="12" Foreground="Black" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+              <TextBlock x:Name="CodeBadgeText" FontWeight="Bold" FontSize="14" Foreground="Black" HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Grid>
-            <TextBlock x:Name="CodeTitle" FontWeight="SemiBold" FontSize="12.5" Foreground="White" Margin="9,0,0,1" VerticalAlignment="Center"
-                       TextTrimming="CharacterEllipsis"/>
+            <StackPanel Margin="10,0,8,0" VerticalAlignment="Center">
+              <TextBlock x:Name="CodeTitle" FontWeight="SemiBold" FontSize="14" Foreground="White" TextTrimming="CharacterEllipsis"/>
+              <TextBlock Text="From your phone · now" FontSize="12" Foreground="{StaticResource Muted}" Margin="0,1,0,0"/>
+            </StackPanel>
           </DockPanel>
           <StackPanel VerticalAlignment="Bottom" HorizontalAlignment="Left">
-            <TextBlock Text="Login code" FontSize="11.5" Foreground="{StaticResource Muted}"/>
-            <TextBlock x:Name="CodeText" FontFamily="Segoe UI Variable Display, Segoe UI" FontWeight="Bold" FontSize="38"
-                       Foreground="White" Typography.NumeralAlignment="Tabular" Margin="0,-2,0,-4"/>
+            <TextBlock Text="Login code" FontSize="12" Foreground="{StaticResource Muted}"/>
+            <TextBlock x:Name="CodeText" FontWeight="Bold" FontSize="46" Foreground="White" Typography.NumeralAlignment="Tabular" Margin="0,0,0,-6"/>
           </StackPanel>
-          <Button Style="{StaticResource BigBtn}" Background="{DynamicResource Green}" Content="Copy" Width="96"
-                  HorizontalAlignment="Right" VerticalAlignment="Bottom" Click="PhoneButton_Click"/>
+          <Button Style="{StaticResource BigBtn}" Background="{DynamicResource Green}" Width="116" Height="48"
+                  HorizontalAlignment="Right" VerticalAlignment="Bottom" Click="PhoneButton_Click">
+            <StackPanel Orientation="Horizontal">
+              <TextBlock FontFamily="{StaticResource Icons}" Text="&#xE8C8;" FontSize="15" VerticalAlignment="Center"/>
+              <TextBlock Text="Copy" FontSize="15" Margin="8,0,0,1" VerticalAlignment="Center"/>
+            </StackPanel>
+          </Button>
         </Grid>
 
         <!-- Moment: an incoming call on the phone -->
-        <Grid x:Name="CallMoment" Opacity="0" IsHitTestVisible="False" Margin="18,14,18,14">
+        <Grid x:Name="CallMoment" Opacity="0" IsHitTestVisible="False" Margin="28,24,28,24">
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="Auto"/>
           </Grid.ColumnDefinitions>
-          <Border Width="76" Height="76" CornerRadius="38" Background="#2A1512" BorderBrush="{DynamicResource Coral}" BorderThickness="2.5" VerticalAlignment="Center">
-            <TextBlock x:Name="CallInitial" FontFamily="Segoe UI Variable Display, Segoe UI" FontWeight="Bold" FontSize="30"
-                       Foreground="{DynamicResource Coral}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,2"/>
+          <Border Width="96" Height="96" CornerRadius="48" Background="#2A1512" BorderBrush="{DynamicResource Coral}" BorderThickness="3" VerticalAlignment="Center">
+            <TextBlock x:Name="CallInitial" FontWeight="Bold" FontSize="38" Foreground="{DynamicResource Coral}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,3"/>
           </Border>
-          <StackPanel Grid.Column="1" Margin="16,0,10,0" VerticalAlignment="Center">
-            <TextBlock Text="Incoming call" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource Coral}"/>
-            <TextBlock x:Name="CallName" FontFamily="Segoe UI Variable Display, Segoe UI" FontWeight="Bold" FontSize="28" Foreground="White"
-                       TextTrimming="CharacterEllipsis" Margin="0,1,0,0"/>
-            <TextBlock Text="Your phone · Phone Link" FontSize="11.5" Foreground="{StaticResource Muted}"/>
+          <StackPanel Grid.Column="1" Margin="20,0,12,0" VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal">
+              <TextBlock FontFamily="{StaticResource Icons}" Text="&#xE717;" FontSize="13" Foreground="{DynamicResource Coral}" VerticalAlignment="Center"/>
+              <TextBlock Text="Incoming call" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource Coral}" Margin="7,0,0,1"/>
+            </StackPanel>
+            <TextBlock x:Name="CallName" FontWeight="Bold" FontSize="36" Foreground="White" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
+            <TextBlock Text="Your phone · through Phone Link" FontSize="13" Foreground="{StaticResource Muted}" Margin="0,2,0,0"/>
           </StackPanel>
-          <Button Grid.Column="2" Style="{StaticResource RoundBtn}" Background="{DynamicResource Green}" Content="&#xE717;"
+          <Button Grid.Column="2" Style="{StaticResource RoundBtn}" Background="{DynamicResource Green}" Content="&#xE717;" Width="64" Height="64" FontSize="24"
                   ToolTip="Open Phone Link" VerticalAlignment="Center" Click="PhoneButton_Click"/>
+        </Grid>
+
+        <!-- Moment: a download finished -->
+        <Grid x:Name="DownloadMoment" Opacity="0" IsHitTestVisible="False" Margin="28,24,28,24">
+          <DockPanel VerticalAlignment="Top">
+            <TextBlock DockPanel.Dock="Right" Text="Downloads folder" FontSize="13" Foreground="{StaticResource Muted}"/>
+            <TextBlock Text="Downloaded" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource Green}"/>
+          </DockPanel>
+          <DockPanel VerticalAlignment="Top" Margin="0,36,0,0">
+            <Border Width="62" Height="74" CornerRadius="14" Background="{StaticResource Surface}" BorderBrush="#3A3A3C" BorderThickness="1.5" DockPanel.Dock="Left">
+              <TextBlock x:Name="DlExt" FontWeight="Bold" FontSize="12" Foreground="{DynamicResource Green}" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,9"/>
+            </Border>
+            <StackPanel Margin="16,0,0,0" VerticalAlignment="Center">
+              <TextBlock x:Name="DlName" FontWeight="Bold" FontSize="24" Foreground="White" TextTrimming="CharacterEllipsis"/>
+              <TextBlock Text="Drag it off the island into any folder or app" FontSize="13" Foreground="{StaticResource Muted}" Margin="0,4,0,0"/>
+            </StackPanel>
+          </DockPanel>
+          <Button Style="{StaticResource BigBtn}" Background="{DynamicResource Green}" Content="Show in folder" Width="150" Height="42"
+                  HorizontalAlignment="Left" VerticalAlignment="Bottom" Click="DownloadShow_Click"/>
+        </Grid>
+
+        <!-- Moment: charging, or the battery running low -->
+        <Grid x:Name="PowerMoment" Opacity="0" IsHitTestVisible="False" Margin="28,22,28,22">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+          </Grid.RowDefinitions>
+          <DockPanel>
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+              <TextBlock x:Name="PowerPct" FontWeight="Bold" FontSize="30" Foreground="White" Typography.NumeralAlignment="Tabular"/>
+              <TextBlock Text="%" FontSize="16" Foreground="{StaticResource Muted}" VerticalAlignment="Bottom" Margin="1,0,0,5"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+              <TextBlock x:Name="PowerGlyph" FontFamily="{StaticResource Icons}" Text="&#xE945;" FontSize="15" VerticalAlignment="Center"/>
+              <TextBlock x:Name="PowerLabel" Text="Charging" FontWeight="Bold" FontSize="15" Margin="7,0,0,1" VerticalAlignment="Center"/>
+            </StackPanel>
+          </DockPanel>
+          <Grid x:Name="PowerBars" Grid.Row="1" Margin="0,12" VerticalAlignment="Stretch"/>
+          <DockPanel Grid.Row="2">
+            <Border x:Name="PowerPhone" DockPanel.Dock="Right" Background="{StaticResource ChipBg}" CornerRadius="14" Height="28" Padding="12,0" Visibility="Collapsed">
+              <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock FontFamily="{StaticResource Icons}" Text="&#xE8EA;" FontSize="12" Foreground="White" VerticalAlignment="Center"/>
+                <TextBlock x:Name="PowerPhoneText" FontSize="13" FontWeight="SemiBold" Foreground="White" Margin="7,0,0,1"/>
+              </StackPanel>
+            </Border>
+            <TextBlock Text="This laptop" FontSize="13" Foreground="{StaticResource Muted}" VerticalAlignment="Center"/>
+          </DockPanel>
         </Grid>
 
         </Grid>
@@ -263,7 +401,7 @@
                 IsHitTestVisible="False" Panel.ZIndex="9" OpacityMask="{Binding OpacityMask, ElementName=Rim}"/>
 
         <!-- Expanded panel. Fixed size so the growing island reveals it instead of squashing it. -->
-        <Grid x:Name="Full" Width="316" Height="244" Margin="0,12,0,0"
+        <Grid x:Name="Full" Width="704" Height="410" Margin="0,24,0,0"
               HorizontalAlignment="Center" VerticalAlignment="Top"
               Opacity="0" IsHitTestVisible="False" Visibility="Hidden">
           <Grid.RowDefinitions>
@@ -274,37 +412,40 @@
           <!-- Top bar: also the handle for dragging the island to another spot -->
           <Grid x:Name="Header" Background="Transparent" ToolTip="Drag to move .light">
             <DockPanel>
-              <RadioButton x:Name="TabSettings" DockPanel.Dock="Right" Tag="settings" GroupName="knobs"
+              <RadioButton x:Name="TabSettings" AutomationProperties.Name="Look" DockPanel.Dock="Right" Tag="settings" GroupName="knobs"
                            Style="{StaticResource KnobIcon}" Margin="4,0,0,0" Content="&#xE713;" ToolTip="Look and shortcuts"
                            Checked="Tab_Checked"/>
               <!-- camera / mic in use: hover to see which app -->
-              <StackPanel x:Name="PrivacyHead" DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center"
-                          Margin="7,0,8,0" Background="Transparent" Visibility="Collapsed">
-                <Ellipse x:Name="HeadCam" Width="7" Height="7" Fill="#B8F23A" Margin="0,0,3,0"/>
-                <Ellipse x:Name="HeadMic" Width="7" Height="7" Fill="#FFB020"/>
-              </StackPanel>
+              <Border x:Name="PrivacyHead" DockPanel.Dock="Right" Background="{StaticResource ChipBg}" CornerRadius="15" Height="30" Padding="11,0"
+                      Margin="0,0,8,0" VerticalAlignment="Center" Visibility="Collapsed">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                  <Ellipse x:Name="HeadCam" Width="7" Height="7" Fill="#B8F23A" Margin="0,0,4,0"/>
+                  <Ellipse x:Name="HeadMic" Width="7" Height="7" Fill="#FFB020"/>
+                  <TextBlock x:Name="PrivacyApp" FontSize="12" Foreground="#A1A1A6" Margin="7,0,0,1" MaxWidth="90" TextTrimming="CharacterEllipsis"/>
+                </StackPanel>
+              </Border>
               <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Cursor="SizeAll">
                 <Ellipse Width="5" Height="5" Fill="{DynamicResource Green}" Margin="0,0,5,0"/>
                 <TextBlock Text=".light" Foreground="{StaticResource Muted}" FontSize="11"/>
               </StackPanel>
               <StackPanel Orientation="Horizontal">
-                <RadioButton x:Name="TabMusic" Tag="music" GroupName="knobs" IsChecked="True" Style="{StaticResource KnobIcon}"
+                <RadioButton x:Name="TabMusic" AutomationProperties.Name="Music" Tag="music" GroupName="knobs" IsChecked="True" Style="{StaticResource KnobIcon}"
                              Content="&#xE8D6;" ToolTip="Music" Checked="Tab_Checked"/>
-                <RadioButton x:Name="TabClaude" Tag="claude" GroupName="knobs" Style="{StaticResource KnobIcon}"
+                <RadioButton x:Name="TabClaude" AutomationProperties.Name="Claude" Tag="claude" GroupName="knobs" Style="{StaticResource KnobIcon}"
                              Content="&#xE99A;" ToolTip="Claude Code sessions" Checked="Tab_Checked"/>
-                <RadioButton x:Name="TabPhone" Tag="phone" GroupName="knobs" Style="{StaticResource KnobIcon}"
+                <RadioButton x:Name="TabPhone" AutomationProperties.Name="Phone" Tag="phone" GroupName="knobs" Style="{StaticResource KnobIcon}"
                              Content="&#xE8EA;" ToolTip="Phone: notifications through Phone Link" Checked="Tab_Checked"/>
-                <RadioButton x:Name="TabClips" Tag="clips" GroupName="knobs" Style="{StaticResource KnobIcon}"
+                <RadioButton x:Name="TabClips" AutomationProperties.Name="Clipboard" Tag="clips" GroupName="knobs" Style="{StaticResource KnobIcon}"
                              Content="&#xE77F;" ToolTip="Clipboard" Checked="Tab_Checked"/>
-                <RadioButton x:Name="TabTimer" Tag="timer" GroupName="knobs" Style="{StaticResource KnobIcon}"
+                <RadioButton x:Name="TabTimer" AutomationProperties.Name="Timer" Tag="timer" GroupName="knobs" Style="{StaticResource KnobIcon}"
                              Content="&#xE916;" ToolTip="Focus timer" Checked="Tab_Checked"/>
-                <RadioButton x:Name="TabNotes" Tag="notes" GroupName="knobs" Style="{StaticResource KnobIcon}"
+                <RadioButton x:Name="TabNotes" AutomationProperties.Name="Notes" Tag="notes" GroupName="knobs" Style="{StaticResource KnobIcon}"
                              Content="&#xE70B;" ToolTip="Notes" Checked="Tab_Checked"/>
-                <RadioButton x:Name="TabSnippets" Tag="snippets" GroupName="knobs" Style="{StaticResource KnobIcon}"
+                <RadioButton x:Name="TabSnippets" AutomationProperties.Name="Snippets" Tag="snippets" GroupName="knobs" Style="{StaticResource KnobIcon}"
                              Content="&#xE8C8;" ToolTip="Snippets: saved prompts" Checked="Tab_Checked"/>
-                <RadioButton x:Name="TabShelf" Tag="shelf" GroupName="knobs" Style="{StaticResource KnobIcon}"
+                <RadioButton x:Name="TabShelf" AutomationProperties.Name="Shelf" Tag="shelf" GroupName="knobs" Style="{StaticResource KnobIcon}"
                              Content="&#xE7B8;" ToolTip="File shelf" Checked="Tab_Checked"/>
-                <RadioButton x:Name="TabConvert" Tag="convert" GroupName="knobs" Style="{StaticResource KnobIcon}"
+                <RadioButton x:Name="TabConvert" AutomationProperties.Name="File lab" Tag="convert" GroupName="knobs" Style="{StaticResource KnobIcon}"
                              Content="&#xE8AB;" ToolTip="File lab: convert, resize, clean, PDF" Checked="Tab_Checked"/>
               </StackPanel>
             </DockPanel>
@@ -322,15 +463,15 @@
           </Grid>
           <Grid x:Name="Knobs" Grid.Row="1" Margin="0,8,0,0">
             <k:MusicKnob x:Name="Music"/>
-            <k:ClaudeKnob x:Name="Claude" Visibility="Collapsed"/>
-            <k:PhoneKnob x:Name="PhoneK" Visibility="Collapsed"/>
-            <k:ClipboardKnob x:Name="Clips" Visibility="Collapsed"/>
-            <k:TimerKnob x:Name="Timer" Visibility="Collapsed"/>
-            <k:NotesKnob x:Name="Notes" Visibility="Collapsed"/>
-            <k:SnippetsKnob x:Name="Snippets" Visibility="Collapsed"/>
-            <k:ShelfKnob x:Name="Shelf" Visibility="Collapsed"/>
-            <k:ConvertKnob x:Name="Converter" Visibility="Collapsed"/>
-            <k:SettingsKnob x:Name="Look" Visibility="Collapsed"/>
+            <k:ClaudeKnob x:Name="Claude" Visibility="Collapsed"><k:ClaudeKnob.LayoutTransform><ScaleTransform ScaleX="1.3" ScaleY="1.3"/></k:ClaudeKnob.LayoutTransform></k:ClaudeKnob>
+            <k:PhoneKnob x:Name="PhoneK" Visibility="Collapsed"><k:PhoneKnob.LayoutTransform><ScaleTransform ScaleX="1.3" ScaleY="1.3"/></k:PhoneKnob.LayoutTransform></k:PhoneKnob>
+            <k:ClipboardKnob x:Name="Clips" Visibility="Collapsed"><k:ClipboardKnob.LayoutTransform><ScaleTransform ScaleX="1.3" ScaleY="1.3"/></k:ClipboardKnob.LayoutTransform></k:ClipboardKnob>
+            <k:TimerKnob x:Name="Timer" Visibility="Collapsed"><k:TimerKnob.LayoutTransform><ScaleTransform ScaleX="1.3" ScaleY="1.3"/></k:TimerKnob.LayoutTransform></k:TimerKnob>
+            <k:NotesKnob x:Name="Notes" Visibility="Collapsed"><k:NotesKnob.LayoutTransform><ScaleTransform ScaleX="1.3" ScaleY="1.3"/></k:NotesKnob.LayoutTransform></k:NotesKnob>
+            <k:SnippetsKnob x:Name="Snippets" Visibility="Collapsed"><k:SnippetsKnob.LayoutTransform><ScaleTransform ScaleX="1.3" ScaleY="1.3"/></k:SnippetsKnob.LayoutTransform></k:SnippetsKnob>
+            <k:ShelfKnob x:Name="Shelf" Visibility="Collapsed"><k:ShelfKnob.LayoutTransform><ScaleTransform ScaleX="1.3" ScaleY="1.3"/></k:ShelfKnob.LayoutTransform></k:ShelfKnob>
+            <k:ConvertKnob x:Name="Converter" Visibility="Collapsed"><k:ConvertKnob.LayoutTransform><ScaleTransform ScaleX="1.3" ScaleY="1.3"/></k:ConvertKnob.LayoutTransform></k:ConvertKnob>
+            <k:SettingsKnob x:Name="Look" Visibility="Collapsed"><k:SettingsKnob.LayoutTransform><ScaleTransform ScaleX="1.3" ScaleY="1.3"/></k:SettingsKnob.LayoutTransform></k:SettingsKnob>
           </Grid>
 
           <!-- While dragging files over the island: drop on the shelf or into File lab -->

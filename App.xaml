@@ -18,6 +18,7 @@
     <SolidColorBrush x:Key="Orange" Color="#FFB020"/>
     <SolidColorBrush x:Key="Coral" Color="#FF6B5E"/>
     <SolidColorBrush x:Key="ChipBg" Color="#1C1C1E"/>
+    <FontFamily x:Key="Body">pack://application:,,,/Assets/Fonts/#Inter, Segoe UI</FontFamily>
     <FontFamily x:Key="Icons">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
     <BooleanToVisibilityConverter x:Key="BoolVis"/>
 
@@ -154,11 +155,30 @@
     <!-- Icon-only knob tabs for the compact panel -->
     <Style x:Key="KnobIcon" TargetType="RadioButton" BasedOn="{StaticResource KnobTab}">
       <Setter Property="FontFamily" Value="{StaticResource Icons}"/>
-      <Setter Property="FontSize" Value="13"/>
-      <Setter Property="Padding" Value="0"/>
-      <Setter Property="Width" Value="26"/>
-      <Setter Property="Height" Value="26"/>
-      <Setter Property="Margin" Value="0,0,1,0"/>
+      <Setter Property="FontSize" Value="15"/>
+      <Setter Property="Padding" Value="11,0"/>
+      <Setter Property="MinWidth" Value="38"/>
+      <Setter Property="Height" Value="38"/>
+      <Setter Property="Margin" Value="0,0,6,0"/>
+      <Setter Property="Background" Value="#1C1C1E"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="RadioButton">
+            <Border x:Name="B" Background="{TemplateBinding Background}" CornerRadius="19" Padding="{TemplateBinding Padding}">
+              <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <ContentPresenter VerticalAlignment="Center"/>
+                <TextBlock x:Name="L" Text="{Binding (AutomationProperties.Name), RelativeSource={RelativeSource TemplatedParent}}"
+                           FontFamily="{StaticResource Body}" FontSize="13" FontWeight="SemiBold" Margin="8,0,3,1"
+                           VerticalAlignment="Center" Visibility="Collapsed"/>
+              </StackPanel>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsChecked" Value="True"><Setter TargetName="L" Property="Visibility" Value="Visible"/></Trigger>
+              <Trigger Property="IsMouseOver" Value="True"><Setter Property="Foreground" Value="{StaticResource Fg}"/></Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
     </Style>
 
     <!-- A big pill button for the large island moments: filled with the moment's colour, black text -->

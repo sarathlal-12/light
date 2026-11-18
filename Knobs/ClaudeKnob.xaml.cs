@@ -96,7 +96,10 @@ public partial class ClaudeKnob : UserControl
             ? "Turn on Claude Code status in Look (the gear), then your sessions show up here."
             : "No Claude Code sessions yet. Send Claude a prompt and it shows up here.";
 
-        foreach (var s in list) Rows.Children.Add(Row(s));
+        Rings.Children.Clear();
+        foreach (var s in list.Take(3)) Rings.Children.Add(Ring(s));
+        Rings.Visibility = list.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+        foreach (var s in list.Skip(3)) Rows.Children.Add(Row(s));
     }
 
     FrameworkElement Row(ClaudeSession s)
@@ -149,6 +152,43 @@ public partial class ClaudeKnob : UserControl
 
     static readonly Brush WorkingC = Palette.SkyBrush, Needs = Palette.AmberBrush, DoneC = Palette.LimeBrush;
     static Brush Frozen(byte r, byte g, byte b) { var x = new SolidColorBrush(Color.FromRgb(r, g, b)); x.Freeze(); return x; }
+
+    /// <summary>A session as a ring: blue and filling while it works, amber when it needs you, green when done.</summary>
+    FrameworkElement Ring(ClaudeSession s)
+    {
+        var now = DateTime.Now;
+        var colour = s.State switch { "needs" => Needs, "done" => DoneC, _ => WorkingC };
+        const double size = 76, thick = 8;
+        double fraction = s.State == "working" ? ((now - (s.WorkStarted ?? s.Since)).TotalSeconds % 60) / 60 : 1;
+        double circ = Math.PI * (size - thick) / thick; // dash lengths count in stroke widths
+        var track = new System.Windows.Shapes.Ellipse { Width = size, Height = size, StrokeThickness = thick, Stroke = Palette.Brush(Color.FromRgb(0x2C, 0x2C, 0x2E)) };
+        var arc = new System.Windows.Shapes.Ellipse
+        {
+            Width = size, Height = size, StrokeThickness = thick, Stroke = colour,
+            StrokeDashArray = new DoubleCollection { Math.Max(0.01, circ * fraction), circ * 2 },
+            StrokeDashCap = PenLineCap.Round, RenderTransformOrigin = new Point(0.5, 0.5), RenderTransform = new RotateTransform(-90),
+        };
+        var centre = new TextBlock
+        {
+            Text = s.State switch { "needs" => "!", "done" => "✓", _ => Span(now - (s.WorkStarted ?? s.Since)) },
+            FontWeight = FontWeights.Bold, FontSize = s.State == "working" ? 14 : 24, Foreground = colour,
+            HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
+        };
+        var circle = new Grid { Width = size, Height = size, HorizontalAlignment = HorizontalAlignment.Center };
+        circle.Children.Add(track); circle.Children.Add(arc); circle.Children.Add(centre);
+
+        var name = new TextBlock { Text = s.Project.Length > 0 ? s.Project : "Claude Code", FontWeight = FontWeights.SemiBold, FontSize = 12,
+            HorizontalAlignment = HorizontalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis, Margin = new Thickness(0, 7, 0, 0) };
+        var status = new TextBlock { Text = s.State switch { "needs" => "Needs your OK", "done" => s.Took is TimeSpan t ? $"Done · {Span(t)}" : "Done", _ => "Working" },
+            FontSize = 10.5, HorizontalAlignment = HorizontalAlignment.Center };
+        status.SetResourceReference(TextBlock.ForegroundProperty, "Muted");
+
+        var box = new StackPanel { Width = 130, Margin = new Thickness(0, 0, 18, 0), Cursor = s.Window != IntPtr.Zero ? System.Windows.Input.Cursors.Hand : null,
+            Background = Brushes.Transparent, ToolTip = s.Window != IntPtr.Zero ? "Click to bring it forward" : null };
+        box.Children.Add(circle); box.Children.Add(name); box.Children.Add(status);
+        box.MouseLeftButtonUp += (_, _) => ShowRequested?.Invoke(s);
+        return box;
+    }
 
     /// <summary>"12s", "4m 05s", "1h 20m".</summary>
     internal static string Span(TimeSpan t) =>
