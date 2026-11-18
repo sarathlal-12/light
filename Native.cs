@@ -40,6 +40,21 @@ static class Native
     [DllImport("user32.dll")]
     public static extern bool IsIconic(IntPtr hWnd);
 
+    [DllImport("user32.dll")]
+    public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
+
+    /// <summary>The name of the program that owns a window ("claude", "WindowsTerminal"…), or "".</summary>
+    public static string ProcessNameOf(IntPtr hWnd)
+    {
+        try
+        {
+            GetWindowThreadProcessId(hWnd, out uint pid);
+            using var p = System.Diagnostics.Process.GetProcessById((int)pid);
+            return p.ProcessName;
+        }
+        catch { return ""; }
+    }
+
     // ---- cursor position (to open when it touches the top edge) ----
     [StructLayout(LayoutKind.Sequential)]
     public struct POINT { public int X, Y; }

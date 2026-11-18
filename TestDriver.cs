@@ -41,11 +41,22 @@ static class TestDriver
 
     static string Snap(Window w, string path)
     {
+        // "snap ~name" keeps the background transparent (for promo pictures)
+        bool clear = Path.GetFileName(path).StartsWith('~');
+        if (clear) path = Path.Combine(Path.GetDirectoryName(path)!, Path.GetFileName(path)[1..]);
         var root = (FrameworkElement)w.Content;
         double dpi = VisualTreeHelper.GetDpi(root).PixelsPerDip;
         int pw = (int)(root.ActualWidth * dpi * 2), ph = (int)(root.ActualHeight * dpi * 2);
         var layer = new RenderTargetBitmap(pw, ph, 192 * dpi, 192 * dpi, PixelFormats.Pbgra32);
         layer.Render(root);
+        if (clear)
+        {
+            var png = new PngBitmapEncoder();
+            png.Frames.Add(BitmapFrame.Create(layer));
+            using var f = File.Create(path);
+            png.Save(f);
+            return "saved";
+        }
         // draw on a dark grey so the black island is visible in the picture
         var rtb = new RenderTargetBitmap(pw, ph, 192 * dpi, 192 * dpi, PixelFormats.Pbgra32);
         var dv = new DrawingVisual();

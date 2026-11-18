@@ -105,6 +105,8 @@ public partial class NotchWindow : Window
 
     // Steps aside while a game, fullscreen video or presentation is in front.
     readonly DispatcherTimer fullscreenWatch = new() { Interval = TimeSpan.FromMilliseconds(500) };
+    readonly DispatcherTimer trimSoon = new() { Interval = TimeSpan.FromSeconds(4) };
+    readonly DispatcherTimer trimIdle = new() { Interval = TimeSpan.FromSeconds(60) };
     bool fullscreenHidden, ignoreFullscreen;
 
     /// <summary>Set LIGHT_FRAME_LOG to a file path to record animation frames (for tuning smoothness).</summary>
@@ -167,6 +169,12 @@ public partial class NotchWindow : Window
         fullscreenWatch.Tick += (_, _) => { CheckFullscreen(); CheckAgentSeen(); };
         fullscreenWatch.Start();
         edgeWatch.Start();
+
+        // Give memory back to Windows a few seconds after the panel closes, and now and then while idle.
+        trimSoon.Tick += (_, _) => { trimSoon.Stop(); if (!IsOpen) MemoryTrim.Now(); };
+        trimIdle.Tick += (_, _) => { if (!IsOpen && !Shelf.DraggingOut) MemoryTrim.Now(); };
+        trimIdle.Start();
+        trimSoon.Start();
         momentEnd.Tick += (_, _) => { momentEnd.Stop(); if (state is Island.Song or Island.Copied or Island.Smart or Island.Dial or Island.AgentDone) Morph(Resting); };
         panelDialHide.Tick += (_, _) => { panelDialHide.Stop(); PanelDialBox.BeginAnimation(OpacityProperty, Ease(0, 220)); };
 
@@ -701,6 +709,7 @@ public partial class NotchWindow : Window
         if (fullscreenHidden) Shell.BeginAnimation(OpacityProperty, Ease(0, 200, delayMs: 120));
 
         Keyboard.ClearFocus();
+        trimSoon.Stop(); trimSoon.Start();
         // Hand focus back to whatever you were using, so a copied clip can be pasted straight away.
         if (wasActive && prev != IntPtr.Zero) Native.SetForegroundWindow(prev);
     }
@@ -1456,7 +1465,9 @@ public partial class NotchWindow : Window
     {
         if (!Settings.Current.AgentStatus) return;
         string key = ev.Session.Length > 0 ? ev.Session : ev.Project;
-        bool looking = ev.Window != IntPtr.Zero && Native.GetForegroundWindow() == ev.Window;
+        // In a terminal, having that window in front means you can see the prompt. The Claude desktop app
+        // holds many sessions in one window, so being in it doesn't mean you saw this one: always show.
+        bool looking = ev.Window != IntPtr.Zero && Native.GetForegroundWindow() == ev.Window && !IsClaudeApp(ev.Window);
 
         if (ev.Kind == "done")
         {
@@ -1488,11 +1499,21 @@ public partial class NotchWindow : Window
     }
 
     /// <summary>You switched to the terminal that asked: it's handled.</summary>
+    static IntPtr claudeWindow;
+    static bool claudeWindowIs;
+
+    /// <summary>True for the Claude desktop app's window (remembered, as this runs twice a second).</summary>
+    static bool IsClaudeApp(IntPtr w)
+    {
+        if (w != claudeWindow) { claudeWindow = w; claudeWindowIs = Native.ProcessNameOf(w).Equals("claude", StringComparison.OrdinalIgnoreCase); }
+        return claudeWindowIs;
+    }
+
     void CheckAgentSeen()
     {
         if (agentNeeds.Count == 0) return;
         var fg = Native.GetForegroundWindow();
-        var seen = agentNeeds.Where(kv => kv.Value.Window != IntPtr.Zero && kv.Value.Window == fg).Select(kv => kv.Key).ToList();
+        var seen = agentNeeds.Where(kv => kv.Value.Window != IntPtr.Zero && kv.Value.Window == fg && !IsClaudeApp(fg)).Select(kv => kv.Key).ToList();
         if (seen.Count == 0) return;
         foreach (var k in seen) agentNeeds.Remove(k);
         UpdateAgentText();

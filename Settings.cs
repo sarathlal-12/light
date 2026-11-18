@@ -6,8 +6,10 @@ namespace DotLight;
 /// <summary>Small settings file at %APPDATA%\.light\settings.json.</summary>
 class Settings
 {
+    // LIGHT_DATA (testing only) points .light at another folder, so test runs never touch your own data
     public static string Dir { get; } =
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), ".light");
+        Environment.GetEnvironmentVariable("LIGHT_DATA") is { Length: > 0 } d ? d
+        : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), ".light");
 
     static string FilePath => Path.Combine(Dir, "settings.json");
 

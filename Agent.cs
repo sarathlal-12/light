@@ -28,7 +28,8 @@ static class Agent
         try
         {
             var read = Task.Run(() => new StreamReader(Console.OpenStandardInput(), Encoding.UTF8).ReadToEnd());
-            if (!read.Wait(1500)) return 0;
+            if (!read.Wait(1500)) { Log("no input"); return 0; }
+            Log("input " + read.Result.Length + " chars");
             var json = JsonNode.Parse(read.Result);
             if (json == null) return 0;
 
@@ -58,9 +59,18 @@ static class Agent
             var bytes = Encoding.UTF8.GetBytes(payload.ToJsonString() + "\n");
             pipe.Write(bytes, 0, bytes.Length);
             pipe.Flush();
+            Log("sent " + kind);
         }
-        catch { }
+        catch (Exception ex) { Log("failed: " + ex.GetType().Name + " " + ex.Message); }
         return 0; // never get in Claude Code's way
+    }
+
+    /// <summary>Testing only: LIGHT_AGENT_LOG names a file that gets one line per step.</summary>
+    static void Log(string line)
+    {
+        var f = Environment.GetEnvironmentVariable("LIGHT_AGENT_LOG");
+        if (string.IsNullOrEmpty(f)) return;
+        try { File.AppendAllText(f, $"{DateTime.Now:HH:mm:ss.fff} {line}" + Environment.NewLine); } catch { }
     }
 
     /// <summary>Walks up from this process to the first parent with a visible window: the terminal or editor Claude Code runs in.</summary>

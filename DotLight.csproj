@@ -13,7 +13,15 @@
     <Version>0.1.0</Version>
     <ApplicationIcon>Assets\light.ico</ApplicationIcon>
     <StartupObject>DotLight.Program</StartupObject>
+    <!-- Keep memory low: a .light that sits idle all day doesn't need a background GC thread or a big heap. -->
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+    <TieredPGO>false</TieredPGO>
   </PropertyGroup>
+
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.GC.ConserveMemory" Value="7" />
+    <RuntimeHostConfigurationOption Include="System.GC.RetainVM" Value="false" />
+  </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="Assets\light.ico" LogicalName="light.ico" />

@@ -20,7 +20,7 @@ public class ClipItem : INotifyPropertyChanged
     public string Text { get; set; } = "";
     public string? ImageFile { get; set; }
 
-    // What the text turned out to be (link, colour, pathâ€¦) and what you can do with it. Worked out once, locally.
+    // What the text turned out to be (link, colour, path…) and what you can do with it. Worked out once, locally.
     SmartInfo? smart;
     bool smartChecked;
     [JsonIgnore]
@@ -63,7 +63,7 @@ public class ClipItem : INotifyPropertyChanged
     [JsonIgnore] public bool IsText => Kind == "text";
     [JsonIgnore] public bool IsImage => Kind == "image";
     [JsonIgnore] public string Preview => (Text.Length > 300 ? Text[..300] : Text).Trim();
-    [JsonIgnore] public string PinGlyph => Pinned ? "î¡‚" : "îœ˜";
+    [JsonIgnore] public string PinGlyph => Pinned ? "" : "";
     [JsonIgnore] public double PinOpacity => Pinned ? 1 : 0.5;
     [JsonIgnore] public string TimeLabel => Time.Date == DateTime.Today ? Time.ToString("HH:mm") : Time.ToString("d MMM, HH:mm");
 
@@ -290,7 +290,7 @@ public partial class ClipboardKnob : UserControl
         int next = Math.Clamp(at + steps, 0, list.Count - 1);
         if (at == -1 && steps < 0) next = 0;
         Highlight(list[next]);
-        Hint.Text = "Enter pastes it  Â·  click to copy";
+        Hint.Text = "Enter pastes it  ·  click to copy";
     }
 
     void Highlight(ClipItem? c)
@@ -353,7 +353,7 @@ public partial class ClipboardKnob : UserControl
     void UpdateHint() =>
         Hint.Text = items.Count == 0
             ? "Copy something and it shows up here."
-            : $"{items.Count} clips  Â·  click one to copy it, pin to keep it";
+            : $"{items.Count} clips  ·  click one to copy it, pin to keep it";
 
     static string BackupFile => StoreFile + ".bak";
 
