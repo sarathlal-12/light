@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -92,6 +93,9 @@ public partial class ClipboardKnob : UserControl
     /// <summary>Raised when something new is copied anywhere on the PC, with what it turned out to be (or null).</summary>
     public event Action<SmartInfo?>? Captured;
 
+    /// <summary>Raised just before Captured when the new copy is an image (a screenshot, say).</summary>
+    public event Action<ClipItem>? ImageCaptured;
+
     /// <summary>Raised when a highlighted clip should be pasted straight into the app you came from.</summary>
     public event Action? PasteRequested;
 
@@ -129,6 +133,7 @@ public partial class ClipboardKnob : UserControl
         view.SortDescriptions.Add(new SortDescription(nameof(ClipItem.Time), ListSortDirection.Descending));
         view.Filter = Matches;
         List.ItemsSource = view;
+        PauseBtn.IsChecked = Settings.Current.ClipsPaused;
         UpdateHint();
     }
 
@@ -148,7 +153,7 @@ public partial class ClipboardKnob : UserControl
     void Capture()
     {
         var data = Clipboard.GetDataObject();
-        if (data == null) return;
+        if (data == null || Settings.Current.ClipsPaused) return;
 
         // Respect password managers and apps that ask not to be recorded.
         if (data.GetDataPresent("ExcludeClipboardContentFromMonitorProcessing") ||
@@ -169,7 +174,12 @@ public partial class ClipboardKnob : UserControl
         }
         else if (data.GetDataPresent(DataFormats.Bitmap))
         {
-            if (Clipboard.GetImage() is { } img) { AddImage(img); Captured?.Invoke(null); }
+            if (Clipboard.GetImage() is { } img)
+            {
+                var clip = AddImage(img);
+                ImageCaptured?.Invoke(clip);
+                Captured?.Invoke(null);
+            }
         }
     }
 
@@ -182,7 +192,7 @@ public partial class ClipboardKnob : UserControl
         Changed();
     }
 
-    void AddImage(BitmapSource img)
+    ClipItem AddImage(BitmapSource img)
     {
         var enc = new PngBitmapEncoder();
         enc.Frames.Add(BitmapFrame.Create(img));
@@ -201,10 +211,12 @@ public partial class ClipboardKnob : UserControl
             Directory.CreateDirectory(ClipDir);
             var file = Path.Combine(ClipDir, hash[..16] + ".png");
             File.WriteAllBytes(file, bytes);
-            items.Add(new ClipItem { Kind = "image", ImageFile = file, Hash = hash, Time = DateTime.Now });
+            existing = new ClipItem { Kind = "image", ImageFile = file, Hash = hash, Time = DateTime.Now };
+            items.Add(existing);
             Trim();
         }
         Changed();
+        return existing;
     }
 
     void Trim()
@@ -224,6 +236,7 @@ public partial class ClipboardKnob : UserControl
 
     void Item_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
+        if (justDragged) { justDragged = false; return; }
         if (((FrameworkElement)sender).DataContext is not ClipItem c) return;
         if (!PutOnClipboard(c)) return;
         Hint.Text = "Copied. Paste it anywhere with Ctrl+V.";
@@ -246,6 +259,75 @@ public partial class ClipboardKnob : UserControl
         c.Time = DateTime.Now;
         Changed();
         return true;
+    }
+
+    // ---------- drag a clip out into any app ----------
+
+    Point downAt;
+    bool justDragged;
+
+    void Item_Down(object sender, System.Windows.Input.MouseButtonEventArgs e) { downAt = e.GetPosition(this); justDragged = false; }
+
+    void Item_Move(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (e.LeftButton != System.Windows.Input.MouseButtonState.Pressed || DraggingOut) return;
+        var d = e.GetPosition(this) - downAt;
+        if (Math.Abs(d.X) < SystemParameters.MinimumHorizontalDragDistance && Math.Abs(d.Y) < SystemParameters.MinimumVerticalDragDistance) return;
+        if (((FrameworkElement)sender).DataContext is not ClipItem c) return;
+        justDragged = true;
+        DragOut((DependencyObject)sender, c);
+    }
+
+    /// <summary>True while a clip is being dragged out, so .light doesn't take it as a drop onto itself.</summary>
+    public static bool DraggingOut { get; private set; }
+
+    /// <summary>
+    /// Drags a clip out. Images go as a PNG file (Explorer, chat apps, browsers) and as the picture itself
+    /// (Paint, Word, editors), so whatever you drop it on takes the form it understands.
+    /// </summary>
+    public static void DragOut(DependencyObject source, ClipItem c)
+    {
+        var data = new DataObject();
+        if (c.IsText) data.SetText(c.Text);
+        else
+        {
+            if (DragCopy(c) is string file)
+            {
+                data.SetFileDropList(new StringCollection { file });
+                try { data.SetData("PNG", new MemoryStream(File.ReadAllBytes(file))); } catch { }
+            }
+            if (LoadImage(c.ImageFile) is BitmapSource img) data.SetImage(img);
+        }
+        DraggingOut = true;
+        try { DragDrop.DoDragDrop(source, data, DragDropEffects.Copy); }
+        catch { }
+        finally { DraggingOut = false; }
+    }
+
+    /// <summary>A copy of the image with a readable name ("Screenshot 2026-11-18 154012.png") in a temp folder.</summary>
+    static string? DragCopy(ClipItem c)
+    {
+        if (c.ImageFile == null || !File.Exists(c.ImageFile)) return null;
+        try
+        {
+            var dir = Path.Combine(Path.GetTempPath(), ".light drag");
+            Directory.CreateDirectory(dir);
+            foreach (var old in Directory.EnumerateFiles(dir))
+                try { if (File.GetLastWriteTime(old) < DateTime.Now.AddDays(-1)) File.Delete(old); } catch { }
+            var file = Path.Combine(dir, $"Screenshot {c.Time:yyyy-MM-dd HHmmss}.png");
+            if (!File.Exists(file)) File.Copy(c.ImageFile, file);
+            return file;
+        }
+        catch { return null; }
+    }
+
+    // ---------- pause ----------
+
+    void Pause_Click(object sender, RoutedEventArgs e)
+    {
+        Settings.Current.ClipsPaused = PauseBtn.IsChecked == true;
+        Settings.Current.Save();
+        UpdateHint();
     }
 
     // ---------- smart actions ----------
@@ -351,9 +433,10 @@ public partial class ClipboardKnob : UserControl
     }
 
     void UpdateHint() =>
-        Hint.Text = items.Count == 0
+        Hint.Text = Settings.Current.ClipsPaused ? "Paused: new copies aren't saved. Click pause again to resume."
+            : items.Count == 0
             ? "Copy something and it shows up here."
-            : $"{items.Count} clips  ·  click one to copy it, pin to keep it";
+            : $"{items.Count} clips  ·  click to copy, drag into any app";
 
     static string BackupFile => StoreFile + ".bak";
 

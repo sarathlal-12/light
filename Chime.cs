@@ -7,13 +7,16 @@ namespace DotLight;
 static class Chime
 {
     const int Rate = 44100;
-    static byte[]? chime, pop;
+    static byte[]? chime, pop, done;
 
     /// <summary>A soft two-note chime (the focus timer).</summary>
     public static void Play() => Sound(chime ??= Wav(MakeChime()));
 
     /// <summary>A short bubbly pop (Claude Code needs your OK).</summary>
     public static void Pop() => Sound(pop ??= Wav(MakePop()));
+
+    /// <summary>A softer single pop (Claude Code has finished).</summary>
+    public static void Done() => Sound(done ??= Wav(MakeDone()));
 
     static void Sound(byte[] wav)
     {
@@ -61,6 +64,21 @@ static class Chime
                 v += env * (Math.Sin(phase) + 0.3 * Math.Sin(2 * phase) + 0.1 * Math.Sin(3 * phase));
             }
             data[i] = (short)(Math.Clamp(v * 0.95, -1, 1) * short.MaxValue * 0.97);
+        }
+        return data;
+    }
+
+    static short[] MakeDone()
+    {
+        // one round, softer pop: lower, a touch slower to fade, about half as loud as the pop-pop
+        var data = new short[(int)(Rate * 0.3)];
+        for (int i = 0; i < data.Length; i++)
+        {
+            double u = (double)i / Rate;
+            double phase = 2 * Math.PI * (620 * u + 600 / 40.0 * (1 - Math.Exp(-u * 40)));
+            double env = Math.Min(1, u / 0.003) * Math.Exp(-u * 20);
+            double v = env * (Math.Sin(phase) + 0.2 * Math.Sin(2 * phase));
+            data[i] = (short)(Math.Clamp(v * 0.85, -1, 1) * short.MaxValue * 0.55);
         }
         return data;
     }

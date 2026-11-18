@@ -14,6 +14,7 @@
         <ColumnDefinition Width="Auto"/>
         <ColumnDefinition Width="Auto"/>
         <ColumnDefinition Width="Auto"/>
+        <ColumnDefinition Width="Auto"/>
       </Grid.ColumnDefinitions>
       <TextBox x:Name="Search" TextChanged="Search_Changed"/>
       <TextBlock x:Name="Placeholder" Text="Search clips" Foreground="{StaticResource Muted}" Margin="11,0" FontSize="12"
@@ -22,7 +23,9 @@
               Content="&#xE8B3;" ToolTip="Grab text from screen" Click="Grab_Click"/>
       <Button x:Name="GrabImageBtn" Grid.Column="2" Style="{StaticResource IconBtn}" Width="28" Height="28" FontSize="12" Margin="2,0,0,0"
               Content="&#xE7A8;" ToolTip="Grab image from screen" Click="GrabImage_Click"/>
-      <Button Grid.Column="3" Style="{StaticResource TextBtn}" Content="Clear" ToolTip="Remove everything except pinned clips"
+      <ToggleButton x:Name="PauseBtn" Grid.Column="3" Style="{StaticResource IconToggle}" Width="28" Height="28" FontSize="11" Margin="2,0,0,0"
+                    Content="&#xE769;" ToolTip="Pause clipboard history (new copies aren't saved)" Click="Pause_Click"/>
+      <Button Grid.Column="4" Style="{StaticResource TextBtn}" Content="Clear" ToolTip="Remove everything except pinned clips"
               Margin="5,0,0,0" Click="Clear_Click"/>
     </Grid>
 
@@ -30,7 +33,8 @@
       <ItemsControl x:Name="List">
         <ItemsControl.ItemTemplate>
           <DataTemplate>
-            <Border MouseLeftButtonUp="Item_Click" ToolTip="Click to copy">
+            <Border MouseLeftButtonUp="Item_Click" PreviewMouseLeftButtonDown="Item_Down" PreviewMouseMove="Item_Move"
+                    ToolTip="Click to copy · drag into any app">
               <Border.Style>
                 <Style TargetType="Border" BasedOn="{StaticResource HoverRow}">
                   <Style.Triggers>

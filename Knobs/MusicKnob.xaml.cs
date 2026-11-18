@@ -45,6 +45,7 @@ public partial class MusicKnob : UserControl
     async Task Connect()
     {
         if (manager != null) return;
+        if (Environment.GetEnvironmentVariable("LIGHT_TEST") != null) return; // test runs never read what's playing on this PC
         try
         {
             manager = await MediaManager.RequestAsync();

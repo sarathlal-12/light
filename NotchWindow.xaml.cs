@@ -21,7 +21,7 @@ namespace DotLight;
 /// </summary>
 public partial class NotchWindow : Window
 {
-    enum Island { Idle, Music, Song, Copied, Smart, Dial, Timer, Alarm, Agent, AgentDone, Open }
+    enum Island { Idle, Music, Song, Copied, Smart, Dial, Timer, Alarm, Agent, AgentDone, Shot, Open }
 
     const double Gap = 3, SideGap = 10, MaxRadius = 30;
 
@@ -37,7 +37,17 @@ public partial class NotchWindow : Window
     Note? pinnedNote;
 
     /// <summary>Size of each shape. On the left/right middle spots the small resting shapes stand upright.</summary>
+    /// <summary>Extra width on the right while the camera or mic dots show.</summary>
+    double DotRoom => privacyShown && !AtMiddle ? 16 : 0;
+
     Size SizeOf(Island s)
+    {
+        var size = BaseSizeOf(s);
+        if (s != Island.Open) size.Width += DotRoom;
+        return size;
+    }
+
+    Size BaseSizeOf(Island s)
     {
         string style = Settings.Current.IslandStyle;
         if (s == Island.Idle)
@@ -65,6 +75,7 @@ public partial class NotchWindow : Window
             Island.Alarm => new Size(220, 30),
             Island.Agent => new Size(240, 30),
             Island.AgentDone => new Size(agentDoneWidth, 20),
+            Island.Shot => new Size(250, 54),
             _ => new Size(340, 264),
         };
     }
@@ -137,7 +148,7 @@ public partial class NotchWindow : Window
 
         // Opens the instant the cursor reaches the island or the top edge.
         collapseDelay.Tick += (_, _) => { collapseDelay.Stop(); if (!ShouldStayOpen()) Collapse(); };
-        edgeWatch.Tick += (_, _) => { if (!IsOpen && !fullscreenHidden && state is not (Island.Dial or Island.Smart or Island.Alarm or Island.Agent) && !dragging && CursorAtEdge()) Expand(byKey: false); };
+        edgeWatch.Tick += (_, _) => { if (!IsOpen && !fullscreenHidden && state is not (Island.Dial or Island.Smart or Island.Alarm or Island.Agent or Island.Shot) && !dragging && CursorAtEdge()) Expand(byKey: false); };
 
         // Resting face: the clock ticks over, a pinned note shows instead.
         clockTick.Tick += (_, _) => UpdateClock();
@@ -165,9 +176,22 @@ public partial class NotchWindow : Window
         Snippets.PasteRequested += PasteSnippet;
         Look.FeaturesChanged += ApplyFeatures;
 
-        // Claude Code status: needs your OK / done.
+        // Claude Code status: working / needs your OK / done.
         Agent.Received += OnAgent;
         Agent.Listen(Dispatcher);
+        if (Settings.Current.AgentStatus && Environment.GetEnvironmentVariable("LIGHT_TEST") == null && !Agent.HookInstalled)
+            Agent.AddHook(); // an older .light added fewer events: bring the hook up to date
+        Claude.ShowRequested += ShowSession;
+
+        // Camera/mic dots, charging, finished downloads and new versions.
+        privacyWatch.Tick += (_, _) => UpdatePrivacy();
+        privacyWatch.Start();
+        SystemEvents.PowerModeChanged += (_, e) => { if (e.Mode == PowerModes.StatusChange) Dispatcher.BeginInvoke(CheckPower); };
+        batteryWatch.Tick += (_, _) => CheckPower();
+        batteryWatch.Start();
+        lastCharging = Power.Charging;
+        updateWatch.Tick += (_, _) => { updateWatch.Interval = TimeSpan.FromHours(6); _ = CheckUpdate(); };
+        updateWatch.Start();
         agentPulse.Tick += (_, _) => { if (state == Island.Agent) FlashGlow(0.8); else agentPulse.Stop(); };
         Theme.Changed += () => TabLightGlow.Color = TabColour(currentTab);
         fullscreenWatch.Tick += (_, _) => { CheckFullscreen(); CheckAgentSeen(); };
@@ -179,7 +203,7 @@ public partial class NotchWindow : Window
         trimIdle.Tick += (_, _) => { if (!IsOpen && !Shelf.DraggingOut) MemoryTrim.Now(); };
         trimIdle.Start();
         trimSoon.Start();
-        momentEnd.Tick += (_, _) => { momentEnd.Stop(); if (state is Island.Song or Island.Copied or Island.Smart or Island.Dial or Island.AgentDone) Morph(Resting); };
+        momentEnd.Tick += (_, _) => { momentEnd.Stop(); if (state is Island.Song or Island.Copied or Island.Smart or Island.Dial or Island.AgentDone or Island.Shot) { momentDragFile = null; Morph(Resting); } };
         panelDialHide.Tick += (_, _) => { panelDialHide.Stop(); PanelDialBox.BeginAnimation(OpacityProperty, Ease(0, 220)); };
 
         // Mouse wheel = turning a knob (volume, Shift = seek, clipboard = flip through clips).
@@ -188,23 +212,28 @@ public partial class NotchWindow : Window
         // After using the dial on the closed island, a click opens it. A ringing timer is dismissed instead.
         Shell.MouseLeftButtonUp += (_, _) =>
         {
+            if (draggedOut) { draggedOut = false; return; }
             if (state == Island.Alarm) DismissAlarm();
             else if (state == Island.Agent) ShowAgentWindow();
+            else if (state == Island.Shot) { Expand(byKey: false); ShowKnob("clips"); }
             else if (!IsOpen) Expand(byKey: false);
         };
+        // Drag a screenshot or a finished download straight off the island.
+        Shell.PreviewMouseLeftButtonDown += (_, e) => { pressAt = e.GetPosition(this); draggedOut = false; };
+        Shell.PreviewMouseMove += OnMomentDrag;
         Clips.PasteRequested += PasteToPreviousApp;
 
         Shell.MouseEnter += (_, _) =>
         {
             collapseDelay.Stop();
-            if (state == Island.Smart) { momentEnd.Stop(); return; } // hold it so the action can be clicked
+            if (state is Island.Smart or Island.Shot) { momentEnd.Stop(); return; } // hold it so it can be clicked or dragged
             if (state is Island.Alarm or Island.Agent) return;
             if (!IsOpen) Expand(byKey: false);
         };
         Shell.MouseLeave += (_, _) =>
         {
             if (IsOpen) collapseDelay.Start();
-            else if (state == Island.Smart) { momentEnd.Interval = TimeSpan.FromMilliseconds(1200); momentEnd.Start(); }
+            else if (state is Island.Smart or Island.Shot) { momentEnd.Interval = TimeSpan.FromMilliseconds(1500); momentEnd.Start(); }
         };
 
         Deactivated += (_, _) => { if (IsOpen && !App.DialogOpen) Collapse(); };
@@ -225,8 +254,10 @@ public partial class NotchWindow : Window
 
         Music.NowPlayingChanged += OnNowPlaying;
         Music.TrackChanged += OnTrackChanged;
+        Clips.ImageCaptured += clip => shotPending = Settings.Current.ShotMoment ? clip : null;
         Clips.Captured += info =>
         {
+            if (shotPending != null) { ShowShot(shotPending); shotPending = null; pendingCopiedLabel = null; return; }
             if (pendingCopiedLabel != null) { ShowCopied(pendingCopiedLabel); pendingCopiedLabel = null; } // text grabbed from the screen
             else if (info != null) ShowSmart(info);
             else ShowCopied();
@@ -531,6 +562,7 @@ public partial class NotchWindow : Window
         AgentNeeds.IsHitTestVisible = to == Island.Agent;
         Rim.SetResourceReference(Border.BorderBrushProperty, to is Island.Alarm or Island.Agent ? "Orange" : "Green");
         if (to != Island.Open) DropZones.Visibility = Visibility.Collapsed;
+        PrivacyDots.Visibility = privacyShown && to != Island.Open ? Visibility.Visible : Visibility.Collapsed;
         if (to == Island.Agent) agentPulse.Start();
         SmartMoment.IsHitTestVisible = to == Island.Smart;
         AlarmMoment.IsHitTestVisible = to == Island.Alarm;
@@ -615,6 +647,7 @@ public partial class NotchWindow : Window
         Island.Copied => CopiedMoment,
         Island.Dial => DialMoment,
         Island.Smart => SmartMoment,
+        Island.Shot => ShotMoment,
         Island.Open => Full,
         _ => null,
     };
@@ -872,9 +905,10 @@ public partial class NotchWindow : Window
     SmartInfo? smartShown;
 
     /// <summary>Copied something recognisable: show what it is and one quick action.</summary>
-    void ShowSmart(SmartInfo info)
+    void ShowSmart(SmartInfo info, string? dragFile = null)
     {
         smartShown = info;
+        momentDragFile = dragFile;
         SmartIcon.Text = info.Glyph;
         SmartLabel.Text = info.Label;
         SmartButton.Content = info.Primary.Label;
@@ -887,6 +921,7 @@ public partial class NotchWindow : Window
     void SmartButton_Click(object sender, RoutedEventArgs e)
     {
         if (smartShown == null) return;
+        if (smartShown.Kind == SmartKind.Update) { _ = InstallUpdate(); return; }
         var action = smartShown.Primary;
         Clips.Run(action);
         if (action.CopyText != null) ShowMoment(Island.Copied, 1200); // e.g. cleaned link is now on the clipboard
@@ -978,23 +1013,23 @@ public partial class NotchWindow : Window
 
     // ---------- knobs ----------
 
-    static readonly string[] TabOrder = { "music", "clips", "timer", "notes", "snippets", "shelf", "convert", "settings" };
+    static readonly string[] TabOrder = { "music", "claude", "clips", "timer", "notes", "snippets", "shelf", "convert", "settings" };
 
     UIElement KnobFor(string tag) => tag switch
     {
-        "clips" => Clips, "timer" => Timer, "notes" => Notes, "snippets" => Snippets, "shelf" => Shelf,
+        "claude" => Claude, "clips" => Clips, "timer" => Timer, "notes" => Notes, "snippets" => Snippets, "shelf" => Shelf,
         "convert" => Converter, "settings" => Look, _ => Music,
     };
 
     RadioButton TabFor(string tag) => tag switch
     {
-        "clips" => TabClips, "timer" => TabTimer, "notes" => TabNotes, "snippets" => TabSnippets, "shelf" => TabShelf,
+        "claude" => TabClaude, "clips" => TabClips, "timer" => TabTimer, "notes" => TabNotes, "snippets" => TabSnippets, "shelf" => TabShelf,
         "convert" => TabConvert, "settings" => TabSettings, _ => TabMusic,
     };
 
     static string ColourKeyOf(string tag) => tag switch
     {
-        "clips" => "Blue", "snippets" => "Blue", "timer" => "Orange", "convert" => "Orange", "settings" => "Fg", _ => "Green",
+        "clips" => "Blue", "snippets" => "Blue", "timer" => "Orange", "claude" => "Orange", "convert" => "Orange", "settings" => "Fg", _ => "Green",
     };
 
     static Color TabColour(string tag) => ColourKeyOf(tag) == "Fg" ? Colors.White : Theme.Current(ColourKeyOf(tag));
@@ -1045,6 +1080,7 @@ public partial class NotchWindow : Window
             switch (currentTab)
             {
                 case "clips": Motion.Ripple(Clips.RippleItems); break;
+                case "claude": Motion.Ripple(Claude.RippleItems); break;
                 case "notes": if (!Notes.Editing) Motion.Ripple(Notes.RippleItems); break;
                 case "snippets": if (!Snippets.Editing) Motion.Ripple(Snippets.RippleItems); break;
                 case "shelf": Motion.Ripple(Shelf.RippleItems); break;
@@ -1224,8 +1260,13 @@ public partial class NotchWindow : Window
 
     // ---------- copied moments ----------
 
-    void ShowCopied(string label = "Copied", int ms = 1400)
+    void ShowCopied(string label = "Copied", int ms = 1400) => ShowInfo("\uE73E", "Blue", label, ms);
+
+    /// <summary>A small one-line moment: a coloured badge with an icon, and a few words.</summary>
+    void ShowInfo(string glyph, string colour, string label, int ms)
     {
+        CopiedGlyph.Text = glyph;
+        CopiedFill.SetResourceReference(Shape.FillProperty, colour);
         CopiedText.Text = label;
         copiedWidth = Math.Max(124, 50 + label.Length * 6.4);
         ShowMoment(Island.Copied, ms);
@@ -1287,6 +1328,25 @@ public partial class NotchWindow : Window
             case "nomusic": musicPlaying = false; Animate(CompactWave, false); Morph(Resting); return "idle";
             case "fs": ignoreFullscreen = arg == "off"; CheckFullscreen(); return arg;
             case "state": return $"{state} {width.Value:0}x{height.Value:0} tab={currentTab} hotkeys={HotkeyOk}/{GrabHotkeyOk}/{GrabImageHotkeyOk}";
+            case "shot": // shot <png path>: as if a screenshot was just copied
+                ShowShot(new ClipItem { Kind = "image", ImageFile = arg, Time = DateTime.Now }); return state.ToString();
+            case "info": // info glyphhex colour text
+                var ia = arg.Split(' ', 3);
+                ShowInfo(((char)Convert.ToInt32(ia[0], 16)).ToString(), ia[1], ia[2], 60000); return state.ToString();
+            case "download": ShowDownload(arg); return state.ToString();
+            case "update": ShowSmart(new SmartInfo(SmartKind.Update, $".light {arg} is out", "", new[] { new SmartAction("Update") })); return state.ToString();
+            case "privacy": // privacy cam|mic|both|off  (draws the dots without reading Windows)
+                bool c = arg is "cam" or "both", m = arg is "mic" or "both";
+                CamDot.Visibility = c ? Visibility.Visible : Visibility.Collapsed;
+                MicDot.Visibility = m ? Visibility.Visible : Visibility.Collapsed;
+                privacyWatch.Stop();
+                HeadCam.Visibility = CamDot.Visibility; HeadMic.Visibility = MicDot.Visibility;
+                PrivacyHead.ToolTip = string.Join(Environment.NewLine, new[] { c ? "Camera · Zoom" : null, m ? "Mic · Discord" : null }.Where(x => x != null));
+                PrivacyHead.Visibility = c || m ? Visibility.Visible : Visibility.Collapsed;
+                privacyShown = c || m;
+                PrivacyDots.Visibility = privacyShown && !IsOpen ? Visibility.Visible : Visibility.Collapsed;
+                Layers.Margin = new Thickness(0, 0, privacyShown ? 16 : 0, 0);
+                Morph(state); return arg;
             case "snap": return snap(arg);
             default: return "unknown";
         }
@@ -1368,7 +1428,7 @@ public partial class NotchWindow : Window
     {
         collapseDelay.Stop();
         dropZonesHide.Stop();
-        if (Shelf.DraggingOut || DroppedFiles(e).Length == 0) return; // our own drag out of the shelf
+        if (OwnDrag || DroppedFiles(e).Length == 0) return; // our own drag out of the shelf, clipboard or island
         if (!Settings.Current.ShowShelf && !Settings.Current.ShowFileLab) return;
         Expand(byKey: false);
         if (BothDropZones) ShowDropZones(DroppedFiles(e));
@@ -1389,7 +1449,7 @@ public partial class NotchWindow : Window
     {
         collapseDelay.Stop();
         dropZonesHide.Stop();
-        bool files = !Shelf.DraggingOut && e.Data.GetDataPresent(DataFormats.FileDrop)
+        bool files = !OwnDrag && e.Data.GetDataPresent(DataFormats.FileDrop)
                      && (Settings.Current.ShowShelf || Settings.Current.ShowFileLab);
         e.Effects = files ? DragDropEffects.Copy : DragDropEffects.None;
         e.Handled = true;
@@ -1413,7 +1473,7 @@ public partial class NotchWindow : Window
         bool zones = DropZones.Visibility == Visibility.Visible;
         var at = e.GetPosition(DropZones);
         DropZones.Visibility = Visibility.Collapsed;
-        if (files.Length == 0 || Shelf.DraggingOut) return;
+        if (files.Length == 0 || OwnDrag) return;
 
         bool toLab = !Settings.Current.ShowShelf ||
                      (zones && at.X >= DropZones.ActualWidth / 2 && DropLab.Opacity == 1);
@@ -1438,7 +1498,7 @@ public partial class NotchWindow : Window
         {
             ["timer"] = Settings.Current.ShowTimer, ["notes"] = Settings.Current.ShowNotes,
             ["snippets"] = Settings.Current.ShowSnippets, ["shelf"] = Settings.Current.ShowShelf,
-            ["convert"] = Settings.Current.ShowFileLab,
+            ["convert"] = Settings.Current.ShowFileLab, ["claude"] = Settings.Current.AgentStatus,
         };
         foreach (var (tag, visible) in on)
             TabFor(tag).Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
@@ -1447,6 +1507,13 @@ public partial class NotchWindow : Window
         Clips.ShowGrabButtons(Settings.Current.GrabTextOn, Settings.Current.GrabImageOn);
         if (!Settings.Current.AgentStatus && agentNeeds.Count > 0) { agentNeeds.Clear(); if (state == Island.Agent) Morph(Resting); }
         if (!recordingKeys) RegisterHotkeys();
+        if (Settings.Current.DownloadMoment && downloads == null && Environment.GetEnvironmentVariable("LIGHT_TEST") == null)
+        {
+            downloads = new DownloadWatch();
+            downloads.Finished += path => Dispatcher.BeginInvoke(() => ShowDownload(path));
+        }
+        else if (!Settings.Current.DownloadMoment && downloads != null) { downloads.Dispose(); downloads = null; }
+        UpdatePrivacy();
         Dispatcher.BeginInvoke(() => MoveTabLight(animate: false), DispatcherPriority.Loaded);
     }
 
@@ -1483,13 +1550,21 @@ public partial class NotchWindow : Window
     void OnAgent(AgentEvent ev)
     {
         if (!Settings.Current.AgentStatus) return;
+        ClaudeSessions.Apply(ev);
         string key = ev.Session.Length > 0 ? ev.Session : ev.Project;
+        if (ev.Kind is "working" or "ended")
+        {
+            // a new prompt or a closed session means any OK it was waiting for is settled
+            if (agentNeeds.Remove(key)) { UpdateAgentText(); if (state == Island.Agent && agentNeeds.Count == 0) Morph(Resting); }
+            return;
+        }
         // In a terminal, having that window in front means you can see the prompt. The Claude desktop app
         // holds many sessions in one window, so being in it doesn't mean you saw this one: always show.
         bool looking = ev.Window != IntPtr.Zero && Native.GetForegroundWindow() == ev.Window && !IsClaudeApp(ev.Window);
 
         if (ev.Kind == "done")
         {
+            if (!fullscreenHidden) Chime.Done(); // a softer pop; stays quiet over a full-screen game or video
             if (agentNeeds.Remove(key)) { UpdateAgentText(); if (state == Island.Agent) Morph(Resting); }
             if (looking || fullscreenHidden || IsOpen || state is Island.Alarm or Island.Agent) return; // you're already looking, or something more important is up
             AgentDoneText.Text = ev.Project.Length > 0 ? $"Done · {ev.Project}" : "Claude is done";
@@ -1535,7 +1610,7 @@ public partial class NotchWindow : Window
         var fg = Native.GetForegroundWindow();
         var seen = agentNeeds.Where(kv => kv.Value.Window != IntPtr.Zero && kv.Value.Window == fg && !IsClaudeApp(fg)).Select(kv => kv.Key).ToList();
         if (seen.Count == 0) return;
-        foreach (var k in seen) agentNeeds.Remove(k);
+        foreach (var k in seen) { agentNeeds.Remove(k); ClaudeSessions.Seen(k); }
         UpdateAgentText();
         if (state == Island.Agent) Morph(Resting);
     }
@@ -1548,6 +1623,7 @@ public partial class NotchWindow : Window
         if (agentNeeds.Count == 0) { Morph(Resting); return; }
         var (key, ev) = agentNeeds.Last();
         agentNeeds.Remove(key);
+        ClaudeSessions.Seen(key);
         if (ev.Window != IntPtr.Zero)
         {
             if (Native.IsIconic(ev.Window)) Native.ShowWindow(ev.Window, 9); // restore if minimised
@@ -1556,5 +1632,142 @@ public partial class NotchWindow : Window
         UpdateAgentText();
         Morph(Resting);
         if (agentNeeds.Count > 0) agentPulse.Start();
+    }
+
+    /// <summary>A row in the Claude tab was clicked: bring that session's window forward.</summary>
+    void ShowSession(ClaudeSession session)
+    {
+        if (agentNeeds.Remove(session.Key)) { UpdateAgentText(); ClaudeSessions.Seen(session.Key); }
+        if (session.Window == IntPtr.Zero) return;
+        Collapse();
+        if (Native.IsIconic(session.Window)) Native.ShowWindow(session.Window, 9);
+        Native.SetForegroundWindow(session.Window);
+    }
+
+    // ---------- screenshot moment, and dragging things off the island ----------
+
+    ClipItem? shotPending, shotClip;
+    string? momentDragFile;
+    Point pressAt;
+    bool draggedOut;
+
+    bool OwnDrag => Shelf.DraggingOut || ClipboardKnob.DraggingOut || islandDragging;
+    static bool islandDragging;
+
+    void ShowShot(ClipItem clip)
+    {
+        shotClip = clip;
+        ShotThumb.ImageSource = clip.Thumb;
+        if (IsOpen || fullscreenHidden) return;
+        ShowMoment(Island.Shot, 5000);
+    }
+
+    void OnMomentDrag(object sender, MouseEventArgs e)
+    {
+        if (e.LeftButton != MouseButtonState.Pressed || OwnDrag) return;
+        bool shot = state == Island.Shot && shotClip != null;
+        bool file = state == Island.Smart && momentDragFile != null && File.Exists(momentDragFile);
+        if (!shot && !file) return;
+        var d = e.GetPosition(this) - pressAt;
+        if (Math.Abs(d.X) < SystemParameters.MinimumHorizontalDragDistance && Math.Abs(d.Y) < SystemParameters.MinimumVerticalDragDistance) return;
+        draggedOut = true;
+        momentEnd.Stop();
+        if (shot) ClipboardKnob.DragOut(Shell, shotClip!);
+        else
+        {
+            islandDragging = true;
+            try { DragDrop.DoDragDrop(Shell, new DataObject(DataFormats.FileDrop, new[] { momentDragFile! }), DragDropEffects.Copy); }
+            catch { }
+            finally { islandDragging = false; }
+        }
+        momentDragFile = null;
+        Morph(Resting);
+    }
+
+    // ---------- camera and microphone in use ----------
+
+    readonly DispatcherTimer privacyWatch = new() { Interval = TimeSpan.FromSeconds(2) };
+    bool privacyShown;
+
+    void UpdatePrivacy()
+    {
+        List<string> cam = new(), mic = new();
+        if (Settings.Current.PrivacyDots) (cam, mic) = Privacy.InUse();
+        bool any = cam.Count + mic.Count > 0;
+        CamDot.Visibility = cam.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        MicDot.Visibility = mic.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        var parts = new List<string>();
+        if (cam.Count > 0) parts.Add("Camera · " + string.Join(", ", cam));
+        if (mic.Count > 0) parts.Add("Mic · " + string.Join(", ", mic));
+        HeadCam.Visibility = CamDot.Visibility;
+        HeadMic.Visibility = MicDot.Visibility;
+        PrivacyHead.ToolTip = string.Join(Environment.NewLine, parts);
+        PrivacyHead.Visibility = any ? Visibility.Visible : Visibility.Collapsed;
+
+        // the dots sit inside the closed island (Line and Dot styles are too small for them; the panel lists them)
+        bool tooSmall = state == Island.Idle && Settings.Current.IslandStyle is "Line" or "Dot";
+        bool show = any && !AtMiddle && !tooSmall;
+        PrivacyDots.Visibility = show && !IsOpen ? Visibility.Visible : Visibility.Collapsed;
+        Layers.Margin = new Thickness(0, 0, show ? 16 : 0, 0);
+        if (show != privacyShown)
+        {
+            privacyShown = show;
+            if (show) FlashGlow(0.8);
+            Morph(state);
+        }
+    }
+
+    // ---------- charging and battery ----------
+
+    readonly DispatcherTimer batteryWatch = new() { Interval = TimeSpan.FromSeconds(60) };
+    bool lastCharging, lowShown;
+
+    void CheckPower()
+    {
+        if (!Power.HasBattery) return;
+        bool charging = Power.Charging;
+        int pct = Power.Percent;
+        if (charging && !lastCharging && Settings.Current.PowerMoment)
+            ShowInfo("\uE945", "Green", $"Charging · {pct}%", 2600);
+        if (charging) lowShown = false;
+        else if (pct <= 15 && !lowShown && Settings.Current.PowerMoment)
+        {
+            lowShown = true;
+            ShowInfo("\uE7BA", "Orange", $"Battery low · {pct}%", 5000);
+        }
+        lastCharging = charging;
+    }
+
+    // ---------- finished downloads ----------
+
+    DownloadWatch? downloads;
+
+    void ShowDownload(string path)
+    {
+        if (!Settings.Current.DownloadMoment) return;
+        var name = System.IO.Path.GetFileName(path);
+        var info = new SmartInfo(SmartKind.Download, $"{name} downloaded", "\uE896", new[] { new SmartAction("Show", Reveal: path) });
+        ShowSmart(info, path);
+    }
+
+    // ---------- new version ----------
+
+    readonly DispatcherTimer updateWatch = new() { Interval = TimeSpan.FromSeconds(90) };
+
+    async Task CheckUpdate()
+    {
+        if (!Settings.Current.UpdateNotice || Environment.GetEnvironmentVariable("LIGHT_TEST") != null) return;
+        var version = await Updates.Check();
+        if (version == null || version == Settings.Current.UpdateShown) return;
+        ShowSmart(new SmartInfo(SmartKind.Update, $".light {version} is out", "\uE777", new[] { new SmartAction("Update") }));
+        if (state != Island.Smart) return; // couldn't show right now (fullscreen, panel open): try again next time
+        Settings.Current.UpdateShown = version;
+        Settings.Current.Save();
+    }
+
+    async Task InstallUpdate()
+    {
+        ShowInfo("\uE896", "Green", "Updating .light…", 30000);
+        if (!await Updates.Install()) ShowCopied("Couldn't update, try again later", 2600);
     }
 }

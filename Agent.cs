@@ -9,7 +9,7 @@ using System.Windows.Threading;
 
 namespace DotLight;
 
-/// <summary>One thing Claude Code told us: it needs your OK, or it has finished.</summary>
+/// <summary>One thing Claude Code told us: it's working, needs your OK, has finished, or the session ended.</summary>
 record AgentEvent(string Kind, string Session, string Project, string Message, IntPtr Window);
 
 /// <summary>
@@ -38,6 +38,8 @@ static class Agent
             string kind = hookEvent switch
             {
                 "Stop" => "done",
+                "UserPromptSubmit" => "working",
+                "SessionEnd" => "ended",
                 "Notification" when message.Contains("permission", StringComparison.OrdinalIgnoreCase)
                                  || (string?)json["notification_type"] == "permission_prompt" => "needs",
                 _ => "",
@@ -150,7 +152,7 @@ static class Agent
             var j = JsonNode.Parse(line);
             if (j == null) return null;
             string kind = (string?)j["kind"] ?? "";
-            if (kind is not ("needs" or "done")) return null;
+            if (kind is not ("needs" or "done" or "working" or "ended")) return null;
             return new AgentEvent(kind, (string?)j["session"] ?? "", (string?)j["project"] ?? "",
                 (string?)j["message"] ?? "", new IntPtr((long?)j["window"] ?? 0));
         }
@@ -164,7 +166,7 @@ static class Agent
         Environment.GetEnvironmentVariable("LIGHT_CLAUDE_SETTINGS") is { Length: > 0 } p ? p
         : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".claude", "settings.json");
 
-    static readonly string[] Events = { "Notification", "Stop" };
+    static readonly string[] Events = { "Notification", "Stop", "UserPromptSubmit", "SessionEnd" };
 
     /// <summary>Forward slashes work both in Git Bash (which Claude Code uses for hooks) and in cmd.</summary>
     static string Command => $"\"{(Environment.ProcessPath ?? "light.exe").Replace('\\', '/')}\" --agent";

@@ -20,6 +20,9 @@
         <!-- Thin line / Dot styles: the resting island is made of light itself -->
         <Border x:Name="IdleFill" Background="{DynamicResource Green}" Opacity="0" IsHitTestVisible="False"/>
 
+        <!-- Compact layers. Moves its right edge in to make room for the camera/mic dots. -->
+        <Grid x:Name="Layers">
+
         <!-- Resting face: the time, or a pinned note -->
         <Grid x:Name="IdleFace" Opacity="0" IsHitTestVisible="False">
           <TextBlock x:Name="IdleClock" FontFamily="Segoe UI Variable Display, Segoe UI" FontWeight="SemiBold" FontSize="10.5"
@@ -115,8 +118,8 @@
         <!-- Moment: copied -->
         <Grid x:Name="CopiedMoment" Opacity="0" IsHitTestVisible="False">
           <Grid x:Name="CopiedIcon" Width="14" Height="14" HorizontalAlignment="Left" Margin="4,0,0,0">
-            <Ellipse Fill="{DynamicResource Blue}"/>
-            <TextBlock FontFamily="{StaticResource Icons}" Text="&#xE73E;" FontSize="7.5" Foreground="White"
+            <Ellipse x:Name="CopiedFill" Fill="{DynamicResource Blue}"/>
+            <TextBlock x:Name="CopiedGlyph" FontFamily="{StaticResource Icons}" Text="&#xE73E;" FontSize="7.5" Foreground="White"
                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
           </Grid>
           <TextBlock x:Name="CopiedText" Text="Copied" FontWeight="SemiBold" FontSize="11" Foreground="White"
@@ -145,6 +148,36 @@
         <Grid x:Name="DialMoment" Opacity="0" IsHitTestVisible="False">
           <k:TickDial x:Name="Dial"/>
         </Grid>
+
+        <!-- Moment: a screenshot (or any image) was copied: drag it straight into any app -->
+        <Grid x:Name="ShotMoment" Opacity="0" IsHitTestVisible="False" Margin="7,0,12,0">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+          </Grid.ColumnDefinitions>
+          <Border Width="58" Height="40" CornerRadius="8" Background="{StaticResource Surface}" VerticalAlignment="Center"
+                  BorderBrush="#30FFFFFF" BorderThickness="1">
+            <Border CornerRadius="7">
+              <Border.Background><ImageBrush x:Name="ShotThumb" Stretch="UniformToFill"/></Border.Background>
+            </Border>
+          </Border>
+          <StackPanel Grid.Column="1" Margin="10,0,8,0" VerticalAlignment="Center">
+            <TextBlock Text="Screenshot" FontFamily="Segoe UI Variable Display, Segoe UI" FontWeight="SemiBold" FontSize="12"/>
+            <TextBlock Text="Drag it into any app" Foreground="{StaticResource Muted}" FontSize="10.5" Margin="0,1,0,0"/>
+          </StackPanel>
+          <TextBlock Grid.Column="2" FontFamily="{StaticResource Icons}" Text="&#xE7C2;" FontSize="13" Foreground="{DynamicResource Blue}"
+                     VerticalAlignment="Center"/>
+        </Grid>
+
+        </Grid>
+
+        <!-- Camera / microphone in use: small dots on the island's right end -->
+        <StackPanel x:Name="PrivacyDots" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center"
+                    Margin="0,0,8,0" IsHitTestVisible="False" Panel.ZIndex="11" Visibility="Collapsed">
+          <Ellipse x:Name="CamDot" Width="6" Height="6" Fill="#30D158" Margin="2,0,0,0"/>
+          <Ellipse x:Name="MicDot" Width="6" Height="6" Fill="#FF9F0A" Margin="3,0,0,0"/>
+        </StackPanel>
 
         <!-- Rim light: a thin line of light on the island's own edge, brightest on the side facing
              into the screen. Pulses with the music, flashes on moments. -->
@@ -177,6 +210,12 @@
               <RadioButton x:Name="TabSettings" DockPanel.Dock="Right" Tag="settings" GroupName="knobs"
                            Style="{StaticResource KnobIcon}" Margin="4,0,0,0" Content="&#xE713;" ToolTip="Look and shortcuts"
                            Checked="Tab_Checked"/>
+              <!-- camera / mic in use: hover to see which app -->
+              <StackPanel x:Name="PrivacyHead" DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center"
+                          Margin="7,0,8,0" Background="Transparent" Visibility="Collapsed">
+                <Ellipse x:Name="HeadCam" Width="6" Height="6" Fill="#30D158" Margin="0,0,3,0"/>
+                <Ellipse x:Name="HeadMic" Width="6" Height="6" Fill="#FF9F0A"/>
+              </StackPanel>
               <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Cursor="SizeAll">
                 <Ellipse Width="5" Height="5" Fill="{DynamicResource Green}" Margin="0,0,5,0"/>
                 <TextBlock Text=".light" Foreground="{StaticResource Muted}" FontSize="11"/>
@@ -184,6 +223,8 @@
               <StackPanel Orientation="Horizontal">
                 <RadioButton x:Name="TabMusic" Tag="music" GroupName="knobs" IsChecked="True" Style="{StaticResource KnobIcon}"
                              Content="&#xE8D6;" ToolTip="Music" Checked="Tab_Checked"/>
+                <RadioButton x:Name="TabClaude" Tag="claude" GroupName="knobs" Style="{StaticResource KnobIcon}"
+                             Content="&#xE99A;" ToolTip="Claude Code sessions" Checked="Tab_Checked"/>
                 <RadioButton x:Name="TabClips" Tag="clips" GroupName="knobs" Style="{StaticResource KnobIcon}"
                              Content="&#xE77F;" ToolTip="Clipboard" Checked="Tab_Checked"/>
                 <RadioButton x:Name="TabTimer" Tag="timer" GroupName="knobs" Style="{StaticResource KnobIcon}"
@@ -212,6 +253,7 @@
           </Grid>
           <Grid x:Name="Knobs" Grid.Row="1" Margin="0,8,0,0">
             <k:MusicKnob x:Name="Music"/>
+            <k:ClaudeKnob x:Name="Claude" Visibility="Collapsed"/>
             <k:ClipboardKnob x:Name="Clips" Visibility="Collapsed"/>
             <k:TimerKnob x:Name="Timer" Visibility="Collapsed"/>
             <k:NotesKnob x:Name="Notes" Visibility="Collapsed"/>

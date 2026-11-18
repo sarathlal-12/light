@@ -51,6 +51,19 @@ class Settings
     /// <summary>Claude Code tells .light when it needs your OK or has finished (adds a hook to Claude Code's settings).</summary>
     public bool AgentStatus { get; set; }
 
+    // Moments that can be switched off in Look > Features (all on by default).
+    public bool ShotMoment { get; set; } = true;
+    public bool PrivacyDots { get; set; } = true;
+    public bool PowerMoment { get; set; } = true;
+    public bool DownloadMoment { get; set; } = true;
+    public bool UpdateNotice { get; set; } = true;
+
+    /// <summary>Clipboard history is paused: new copies aren't saved.</summary>
+    public bool ClipsPaused { get; set; }
+
+    /// <summary>The newest version the update notice has already shown, so it shows only once.</summary>
+    public string? UpdateShown { get; set; }
+
     /// <summary>Last minutes picked on the timer dial.</summary>
     public int TimerMinutes { get; set; } = 25;
 

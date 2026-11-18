@@ -1,0 +1,23 @@
+<UserControl x:Class="DotLight.Knobs.ClaudeKnob"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+    </Grid.RowDefinitions>
+    <DockPanel>
+      <Button x:Name="ClearBtn" DockPanel.Dock="Right" Style="{StaticResource TextBtn}" Content="Clear done"
+              ToolTip="Remove finished sessions from the list" Click="Clear_Click" VerticalAlignment="Center"/>
+      <StackPanel VerticalAlignment="Center">
+        <TextBlock Text="Claude Code" FontWeight="SemiBold"/>
+        <TextBlock x:Name="Subtitle" Text="Your sessions, live" Foreground="{StaticResource Muted}" FontSize="10"/>
+      </StackPanel>
+    </DockPanel>
+    <TextBlock x:Name="EmptyHint" Grid.Row="1" Foreground="{StaticResource Muted}" FontSize="11" TextWrapping="Wrap" TextAlignment="Center"
+               VerticalAlignment="Center" Margin="20,0,20,20"/>
+    <ScrollViewer Grid.Row="1" Margin="0,6,0,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+      <StackPanel x:Name="Rows"/>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

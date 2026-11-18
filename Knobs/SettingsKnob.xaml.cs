@@ -38,6 +38,11 @@ public partial class SettingsKnob : UserControl
         ("Focus timer", () => Settings.Current.ShowTimer, v => Settings.Current.ShowTimer = v),
         ("Notes", () => Settings.Current.ShowNotes, v => Settings.Current.ShowNotes = v),
         ("File lab", () => Settings.Current.ShowFileLab, v => Settings.Current.ShowFileLab = v),
+        ("Screenshot moment", () => Settings.Current.ShotMoment, v => Settings.Current.ShotMoment = v),
+        ("Camera and mic dots", () => Settings.Current.PrivacyDots, v => Settings.Current.PrivacyDots = v),
+        ("Charging and battery", () => Settings.Current.PowerMoment, v => Settings.Current.PowerMoment = v),
+        ("Download finished", () => Settings.Current.DownloadMoment, v => Settings.Current.DownloadMoment = v),
+        ("Update notice", () => Settings.Current.UpdateNotice, v => Settings.Current.UpdateNotice = v),
     };
     readonly List<(ToggleButton Switch, Func<bool> Get)> featureSwitches = new();
 
