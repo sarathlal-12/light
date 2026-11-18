@@ -6,3 +6,7 @@ Releases/
 .vs/
 *.log
 .claude/
+
+# local only: promo videos, demo data and update notes
+marketing/
+New Update notes/
