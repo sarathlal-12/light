@@ -122,7 +122,8 @@ public partial class NotchWindow : Window
     static HorizontalAlignment Side =>
         Pos.EndsWith("Left") ? HorizontalAlignment.Left :
         Pos.EndsWith("Right") ? HorizontalAlignment.Right : HorizontalAlignment.Center;
-    Island Resting => agentNeeds.Count > 0 ? Island.Agent : FocusTimer.Active ? Island.Timer : musicPlaying && !musicSilent ? Island.Music : Island.Idle;
+    // Music shows once (the "now playing" moment) and then the island rests; hover to see the player.
+    Island Resting => agentNeeds.Count > 0 ? Island.Agent : FocusTimer.Active ? Island.Timer : Island.Idle;
 
     DateTime lastSound = DateTime.Now;
     bool musicSilent;
@@ -846,7 +847,8 @@ public partial class NotchWindow : Window
             }
         }
 
-        double target = musicPlaying && !musicSilent ? 0.14 + 0.5 * level : 0;
+        // The rim only dances with the sound while you can see the music (the moment or the open panel).
+        double target = musicPlaying && !musicSilent && (IsOpen || state == Island.Song) ? 0.14 + 0.5 * level : 0;
         glow += (target - glow) * (target > glow ? 0.45 : 0.12);
         glowFlash *= 0.9;
         Rim.Opacity = Math.Clamp(Math.Max(glow, glowFlash), 0, 1);
@@ -1500,6 +1502,7 @@ public partial class NotchWindow : Window
         agentNeeds.Remove(key);
         agentNeeds[key] = ev; // newest last
         UpdateAgentText();
+        if (!fullscreenHidden) Chime.Pop(); // stays quiet over a full-screen game or video
         if (IsOpen || fullscreenHidden || state is Island.Alarm) return; // shows when the panel closes
         momentEnd.Stop();
         Morph(Island.Agent);
