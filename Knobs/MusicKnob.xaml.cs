@@ -53,9 +53,27 @@ public partial class MusicKnob : UserControl
         {
             return; // media sessions unavailable on this Windows build; knob just shows "Nothing playing"
         }
-        manager.CurrentSessionChanged += (_, _) => Dispatcher.BeginInvoke(() => { Attach(manager.GetCurrentSession()); RefreshSoon(); });
-        Attach(manager.GetCurrentSession());
+        manager.CurrentSessionChanged += (_, _) => Dispatcher.BeginInvoke(() => { Attach(Pick()); RefreshSoon(); });
+        manager.SessionsChanged += (_, _) => Dispatcher.BeginInvoke(() => { Attach(Pick()); RefreshSoon(); });
+        Attach(Pick());
         await Refresh();
+    }
+
+    // Apps that report "playing" for things that aren't music (the Claude app names its chats this way).
+    static bool Ignored(MediaSession s) => s.SourceAppUserModelId.StartsWith("Claude_", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Windows' current session, or, when that one is ignored, the best of the others.</summary>
+    MediaSession? Pick()
+    {
+        if (manager == null) return null;
+        try
+        {
+            var current = manager.GetCurrentSession();
+            if (current != null && !Ignored(current)) return current;
+            var others = manager.GetSessions().Where(x => !Ignored(x)).ToList();
+            return others.FirstOrDefault(x => x.GetPlaybackInfo().PlaybackStatus == PlaybackStatus.Playing) ?? others.FirstOrDefault();
+        }
+        catch { return null; }
     }
 
     void Attach(MediaSession? s)

@@ -122,7 +122,10 @@ public partial class NotchWindow : Window
     static HorizontalAlignment Side =>
         Pos.EndsWith("Left") ? HorizontalAlignment.Left :
         Pos.EndsWith("Right") ? HorizontalAlignment.Right : HorizontalAlignment.Center;
-    Island Resting => agentNeeds.Count > 0 ? Island.Agent : FocusTimer.Active ? Island.Timer : musicPlaying ? Island.Music : Island.Idle;
+    Island Resting => agentNeeds.Count > 0 ? Island.Agent : FocusTimer.Active ? Island.Timer : musicPlaying && !musicSilent ? Island.Music : Island.Idle;
+
+    DateTime lastSound = DateTime.Now;
+    bool musicSilent;
 
     public NotchWindow()
     {
@@ -829,7 +832,21 @@ public partial class NotchWindow : Window
         // Subtle: a faint base while music plays, breathing up with the loudness.
         // Rises quickly on a beat, settles slowly, so it feels like light, not a meter.
         double level = musicPlaying ? Math.Sqrt(Audio.Peak()) : 0;
-        double target = musicPlaying ? 0.14 + 0.5 * level : 0;
+
+        // Some apps say they're playing while nothing comes out (a muted tab, a video in the Claude app).
+        // After a few silent seconds the island rests; the music look comes back with the sound.
+        if (musicPlaying)
+        {
+            if (level > 0.03) lastSound = DateTime.Now;
+            bool silent = (DateTime.Now - lastSound).TotalSeconds > 8;
+            if (silent != musicSilent)
+            {
+                musicSilent = silent;
+                if (state is Island.Idle or Island.Music) Morph(Resting);
+            }
+        }
+
+        double target = musicPlaying && !musicSilent ? 0.14 + 0.5 * level : 0;
         glow += (target - glow) * (target > glow ? 0.45 : 0.12);
         glowFlash *= 0.9;
         Rim.Opacity = Math.Clamp(Math.Max(glow, glowFlash), 0, 1);
@@ -894,7 +911,7 @@ public partial class NotchWindow : Window
     {
         Theme.SetCover(cover);
         musicPlaying = playing;
-        if (playing) glowTick.Start();
+        if (playing) { lastSound = DateTime.Now; musicSilent = false; glowTick.Start(); }
         CompactArt.ImageSource = cover;
         MomentArt.ImageSource = cover;
         Animate(CompactWave, playing);
