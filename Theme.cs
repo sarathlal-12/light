@@ -8,19 +8,32 @@ namespace DotLight;
 
 /// <summary>
 /// The colour of .light's light: waveform, dial needle, progress bars, selected tab, highlights.
-/// "iOS" keeps a colour per knob (green music, blue clipboard, orange convert); every other
-/// choice uses one colour everywhere. Colour changes fade rather than snap.
+/// ".light" (stored as "iOS" for older settings files) keeps .light's own colour per job: lime for done
+/// and music, sky for copies, amber for things that need you. Every other choice uses one colour
+/// everywhere. Colour changes fade rather than snap.
 /// </summary>
+static class Palette
+{
+    public static readonly Color Lime = Color.FromRgb(0xB8, 0xF2, 0x3A);   // done, OK, music
+    public static readonly Color Amber = Color.FromRgb(0xFF, 0xB0, 0x20);  // needs you, timer
+    public static readonly Color Sky = Color.FromRgb(0x4C, 0xC9, 0xF0);    // copies, info
+    public static readonly Color Coral = Color.FromRgb(0xFF, 0x6B, 0x5E);  // calls, low battery
+    public static readonly Color Surface = Color.FromRgb(0x1C, 0x1C, 0x1E);
+
+    public static SolidColorBrush Brush(Color c) { var b = new SolidColorBrush(c); b.Freeze(); return b; }
+    public static readonly SolidColorBrush LimeBrush = Brush(Lime), AmberBrush = Brush(Amber), SkyBrush = Brush(Sky), CoralBrush = Brush(Coral);
+}
+
 static class Theme
 {
     public static readonly (string Key, string Label)[] Choices =
     {
-        ("iOS", "iOS"), ("White", "White"), ("Amber", "Amber"), ("Ice", "Ice"), ("Mint", "Mint"),
+        ("iOS", ".light"), ("White", "White"), ("Amber", "Amber"), ("Ice", "Ice"), ("Mint", "Mint"),
         ("Magenta", "Magenta"), ("Violet", "Violet"), ("Coral", "Coral"),
         ("Album", "Album art"), ("Windows", "Windows accent"),
     };
 
-    static readonly Color IosGreen = C("#30D158"), IosBlue = C("#0A84FF"), IosOrange = C("#FF9F0A");
+    static readonly Color IosGreen = Palette.Lime, IosBlue = Palette.Sky, IosOrange = Palette.Amber;
 
     static readonly Dictionary<string, Color> Presets = new()
     {

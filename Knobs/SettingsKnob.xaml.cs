@@ -43,6 +43,9 @@ public partial class SettingsKnob : UserControl
         ("Charging and battery", () => Settings.Current.PowerMoment, v => Settings.Current.PowerMoment = v),
         ("Download finished", () => Settings.Current.DownloadMoment, v => Settings.Current.DownloadMoment = v),
         ("Update notice", () => Settings.Current.UpdateNotice, v => Settings.Current.UpdateNotice = v),
+        ("Phone notifications", () => Settings.Current.PhoneOn, v => Settings.Current.PhoneOn = v),
+        ("Show phone message text", () => Settings.Current.PhoneShowMessage, v => Settings.Current.PhoneShowMessage = v),
+        ("Pop for phone notifications", () => Settings.Current.PhonePop, v => Settings.Current.PhonePop = v),
     };
     readonly List<(ToggleButton Switch, Func<bool> Get)> featureSwitches = new();
 
@@ -91,6 +94,16 @@ public partial class SettingsKnob : UserControl
     }
 
     /// <summary>Shows the current settings (after a change from the tray menu or by dragging).</summary>
+    /// <summary>Shows the "What's new" card at the top of Look (after an update).</summary>
+    public void ShowWhatsNew(string version)
+    {
+        WhatsNewTitle.Text = $"What's new in {version}";
+        WhatsNew.Visibility = Visibility.Visible;
+        Scroller.ScrollToTop();
+    }
+
+    void WhatsNewClose_Click(object sender, RoutedEventArgs e) => WhatsNew.Visibility = Visibility.Collapsed;
+
     public void Refresh()
     {
         if (spots.TryGetValue(Settings.Current.Position, out var spot)) spot.IsChecked = true;

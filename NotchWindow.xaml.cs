@@ -21,9 +21,9 @@ namespace DotLight;
 /// </summary>
 public partial class NotchWindow : Window
 {
-    enum Island { Idle, Music, Song, Copied, Smart, Dial, Timer, Alarm, Agent, AgentDone, Shot, Open }
+    enum Island { Idle, Music, Song, Copied, Smart, Dial, Timer, Alarm, Agent, AgentDone, Shot, Phone, PhoneCode, Call, Open }
 
-    const double Gap = 3, SideGap = 10, MaxRadius = 30;
+    const double Gap = 3, SideGap = 10, MaxRadius = 34;
 
     public static readonly (string Key, string Label)[] Positions =
     {
@@ -33,7 +33,7 @@ public partial class NotchWindow : Window
     };
     const int HotkeyToggle = 1, HotkeyGrab = 2, HotkeyGrabImage = 3;
 
-    double copiedWidth = 124, noteWidth = 160, agentDoneWidth = 140;
+    double copiedWidth = 130, noteWidth = 160, agentDoneWidth = 150;
     Note? pinnedNote;
 
     /// <summary>Size of each shape. On the left/right middle spots the small resting shapes stand upright.</summary>
@@ -52,6 +52,7 @@ public partial class NotchWindow : Window
         string style = Settings.Current.IslandStyle;
         if (s == Island.Idle)
         {
+            if (privacyShown && style is "Line" or "Dot") return new Size(22, 18); // a small pill for the camera/mic dots
             if (style == "Line") return AtMiddle ? new Size(4, 120) : new Size(120, 4);
             if (style == "Dot") return new Size(12, 12);
             if (!AtMiddle && pinnedNote != null) return new Size(noteWidth, 20);
@@ -67,15 +68,18 @@ public partial class NotchWindow : Window
         return s switch
         {
             Island.Music => new Size(150, 20),
-            Island.Song => new Size(280, 44),
-            Island.Copied => new Size(copiedWidth, 20),
-            Island.Dial => new Size(230, 28),
-            Island.Smart => new Size(250, 28),
-            Island.Timer => new Size(150, 20),
-            Island.Alarm => new Size(220, 30),
-            Island.Agent => new Size(240, 30),
-            Island.AgentDone => new Size(agentDoneWidth, 20),
-            Island.Shot => new Size(250, 54),
+            Island.Song => new Size(300, 54),
+            Island.Copied => new Size(copiedWidth, 32),
+            Island.Dial => new Size(240, 32),
+            Island.Smart => new Size(300, 40),
+            Island.Timer => new Size(172, 28),
+            Island.Alarm => new Size(330, 136),
+            Island.Agent => new Size(370, 152),
+            Island.AgentDone => new Size(agentDoneWidth, 32),
+            Island.Shot => new Size(360, 136),
+            Island.Phone => new Size(320, 52),
+            Island.PhoneCode => new Size(350, 140),
+            Island.Call => new Size(380, 112),
             _ => new Size(340, 264),
         };
     }
@@ -148,7 +152,7 @@ public partial class NotchWindow : Window
 
         // Opens the instant the cursor reaches the island or the top edge.
         collapseDelay.Tick += (_, _) => { collapseDelay.Stop(); if (!ShouldStayOpen()) Collapse(); };
-        edgeWatch.Tick += (_, _) => { if (!IsOpen && !fullscreenHidden && state is not (Island.Dial or Island.Smart or Island.Alarm or Island.Agent or Island.Shot) && !dragging && CursorAtEdge()) Expand(byKey: false); };
+        edgeWatch.Tick += (_, _) => { if (!IsOpen && !fullscreenHidden && state is not (Island.Dial or Island.Smart or Island.Alarm or Island.Agent or Island.Shot or Island.Phone or Island.PhoneCode or Island.Call) && !dragging && CursorAtEdge()) Expand(byKey: false); };
 
         // Resting face: the clock ticks over, a pinned note shows instead.
         clockTick.Tick += (_, _) => UpdateClock();
@@ -192,6 +196,18 @@ public partial class NotchWindow : Window
         lastCharging = Power.Charging;
         updateWatch.Tick += (_, _) => { updateWatch.Interval = TimeSpan.FromHours(6); _ = CheckUpdate(); };
         updateWatch.Start();
+        whatsNewSoon.Tick += (_, _) => { whatsNewSoon.Stop(); AnnounceUpdate(); };
+        whatsNewSoon.Start();
+
+        // Phone: notifications and calls through Phone Link, the phone's battery, and the iPhone clipboard.
+        phoneWatch.Tick += (_, _) => CheckPhoneNotes();
+        phoneWatch.Start();
+        phoneStatusWatch.Tick += (_, _) => { phoneStatusWatch.Interval = TimeSpan.FromSeconds(20); _ = CheckPhone(); };
+        phoneStatusWatch.Start();
+        PhoneK.CopyCodeRequested += code => { Collapse(); CopyCode(code); };
+        PhoneK.SetClipListener = on => { if (on) return phoneClip.Start(); phoneClip.Stop(); return null; };
+        phoneClip.Received += text => Dispatcher.BeginInvoke(() => FromPhoneClipboard(text));
+        if (Settings.Current.PhoneClipOn && Environment.GetEnvironmentVariable("LIGHT_TEST") == null) phoneClip.Start();
         agentPulse.Tick += (_, _) => { if (state == Island.Agent) FlashGlow(0.8); else agentPulse.Stop(); };
         Theme.Changed += () => TabLightGlow.Color = TabColour(currentTab);
         fullscreenWatch.Tick += (_, _) => { CheckFullscreen(); CheckAgentSeen(); };
@@ -203,7 +219,7 @@ public partial class NotchWindow : Window
         trimIdle.Tick += (_, _) => { if (!IsOpen && !Shelf.DraggingOut) MemoryTrim.Now(); };
         trimIdle.Start();
         trimSoon.Start();
-        momentEnd.Tick += (_, _) => { momentEnd.Stop(); if (state is Island.Song or Island.Copied or Island.Smart or Island.Dial or Island.AgentDone or Island.Shot) { momentDragFile = null; Morph(Resting); } };
+        momentEnd.Tick += (_, _) => { momentEnd.Stop(); if (state is Island.Song or Island.Copied or Island.Smart or Island.Dial or Island.AgentDone or Island.Shot or Island.Phone or Island.PhoneCode or Island.Call) { momentDragFile = null; Morph(Resting); } };
         panelDialHide.Tick += (_, _) => { panelDialHide.Stop(); PanelDialBox.BeginAnimation(OpacityProperty, Ease(0, 220)); };
 
         // Mouse wheel = turning a knob (volume, Shift = seek, clipboard = flip through clips).
@@ -216,6 +232,7 @@ public partial class NotchWindow : Window
             if (state == Island.Alarm) DismissAlarm();
             else if (state == Island.Agent) ShowAgentWindow();
             else if (state == Island.Shot) { Expand(byKey: false); ShowKnob("clips"); }
+            else if (state is Island.Phone or Island.PhoneCode or Island.Call) { PhoneInbox.OpenPhoneLink(); Morph(Resting); }
             else if (!IsOpen) Expand(byKey: false);
         };
         // Drag a screenshot or a finished download straight off the island.
@@ -226,14 +243,14 @@ public partial class NotchWindow : Window
         Shell.MouseEnter += (_, _) =>
         {
             collapseDelay.Stop();
-            if (state is Island.Smart or Island.Shot) { momentEnd.Stop(); return; } // hold it so it can be clicked or dragged
+            if (state is Island.Smart or Island.Shot or Island.Phone or Island.PhoneCode or Island.Call) { momentEnd.Stop(); return; } // hold it so it can be clicked or dragged
             if (state is Island.Alarm or Island.Agent) return;
             if (!IsOpen) Expand(byKey: false);
         };
         Shell.MouseLeave += (_, _) =>
         {
             if (IsOpen) collapseDelay.Start();
-            else if (state is Island.Smart or Island.Shot) { momentEnd.Interval = TimeSpan.FromMilliseconds(1500); momentEnd.Start(); }
+            else if (state is Island.Smart or Island.Shot or Island.Phone or Island.PhoneCode or Island.Call) { momentEnd.Interval = TimeSpan.FromMilliseconds(1500); momentEnd.Start(); }
         };
 
         Deactivated += (_, _) => { if (IsOpen && !App.DialogOpen) Collapse(); };
@@ -565,6 +582,9 @@ public partial class NotchWindow : Window
         PrivacyDots.Visibility = privacyShown && to != Island.Open ? Visibility.Visible : Visibility.Collapsed;
         if (to == Island.Agent) agentPulse.Start();
         SmartMoment.IsHitTestVisible = to == Island.Smart;
+        PhoneMoment.IsHitTestVisible = to == Island.Phone;
+        PhoneCodeMoment.IsHitTestVisible = to == Island.PhoneCode;
+        CallMoment.IsHitTestVisible = to == Island.Call;
         AlarmMoment.IsHitTestVisible = to == Island.Alarm;
         UpdateIdleLook();
         // Closed panel is Hidden (still laid out, so opening never hitches, but invisible to
@@ -648,6 +668,9 @@ public partial class NotchWindow : Window
         Island.Dial => DialMoment,
         Island.Smart => SmartMoment,
         Island.Shot => ShotMoment,
+        Island.Phone => PhoneMoment,
+        Island.PhoneCode => PhoneCodeMoment,
+        Island.Call => CallMoment,
         Island.Open => Full,
         _ => null,
     };
@@ -922,6 +945,7 @@ public partial class NotchWindow : Window
     {
         if (smartShown == null) return;
         if (smartShown.Kind == SmartKind.Update) { _ = InstallUpdate(); return; }
+        if (smartShown.Kind == SmartKind.WhatsNew) { Expand(byKey: false); ShowKnob("settings"); Look.ShowWhatsNew(ThisVersion); return; }
         var action = smartShown.Primary;
         Clips.Run(action);
         if (action.CopyText != null) ShowMoment(Island.Copied, 1200); // e.g. cleaned link is now on the clipboard
@@ -1013,17 +1037,17 @@ public partial class NotchWindow : Window
 
     // ---------- knobs ----------
 
-    static readonly string[] TabOrder = { "music", "claude", "clips", "timer", "notes", "snippets", "shelf", "convert", "settings" };
+    static readonly string[] TabOrder = { "music", "claude", "phone", "clips", "timer", "notes", "snippets", "shelf", "convert", "settings" };
 
     UIElement KnobFor(string tag) => tag switch
     {
-        "claude" => Claude, "clips" => Clips, "timer" => Timer, "notes" => Notes, "snippets" => Snippets, "shelf" => Shelf,
+        "claude" => Claude, "phone" => PhoneK, "clips" => Clips, "timer" => Timer, "notes" => Notes, "snippets" => Snippets, "shelf" => Shelf,
         "convert" => Converter, "settings" => Look, _ => Music,
     };
 
     RadioButton TabFor(string tag) => tag switch
     {
-        "claude" => TabClaude, "clips" => TabClips, "timer" => TabTimer, "notes" => TabNotes, "snippets" => TabSnippets, "shelf" => TabShelf,
+        "claude" => TabClaude, "phone" => TabPhone, "clips" => TabClips, "timer" => TabTimer, "notes" => TabNotes, "snippets" => TabSnippets, "shelf" => TabShelf,
         "convert" => TabConvert, "settings" => TabSettings, _ => TabMusic,
     };
 
@@ -1081,6 +1105,7 @@ public partial class NotchWindow : Window
             {
                 case "clips": Motion.Ripple(Clips.RippleItems); break;
                 case "claude": Motion.Ripple(Claude.RippleItems); break;
+                case "phone": Motion.Ripple(PhoneK.RippleItems); break;
                 case "notes": if (!Notes.Editing) Motion.Ripple(Notes.RippleItems); break;
                 case "snippets": if (!Snippets.Editing) Motion.Ripple(Snippets.RippleItems); break;
                 case "shelf": Motion.Ripple(Shelf.RippleItems); break;
@@ -1118,7 +1143,16 @@ public partial class NotchWindow : Window
         foreach (var tag in TabOrder)
         {
             var tab = TabFor(tag);
-            tab.SetResourceReference(ForegroundProperty, tab.IsChecked == true ? ColourKeyOf(tag) : "Muted");
+            if (tab.IsChecked == true)
+            {
+                if (ColourKeyOf(tag) == "Fg") tab.Background = Brushes.White; else tab.SetResourceReference(BackgroundProperty, ColourKeyOf(tag));
+                tab.Foreground = Brushes.Black;
+            }
+            else
+            {
+                tab.Background = Brushes.Transparent;
+                tab.SetResourceReference(ForegroundProperty, "Muted");
+            }
         }
     }
 
@@ -1185,11 +1219,11 @@ public partial class NotchWindow : Window
         bool breathe = Settings.Current.Breathing;
         // Nothing changed (e.g. music apps saying "still nothing playing" again): don't restart the light,
         // or it visibly dips and comes back.
-        string key = $"{idle}|{style}|{breathe}|{ShowsFace}";
+        string key = $"{idle}|{style}|{breathe}|{ShowsFace}|{privacyShown}";
         if (key == idleLookKey) return;
         idleLookKey = key;
 
-        bool lit = idle && style is "Line" or "Dot";
+        bool lit = idle && style is "Line" or "Dot" && !privacyShown;
         // switching style while resting: show or hide the time / note straight away
         if (idle && IdleFace != null) IdleFace.BeginAnimation(OpacityProperty, Ease(ShowsFace ? 1 : 0, 200));
 
@@ -1268,7 +1302,7 @@ public partial class NotchWindow : Window
         CopiedGlyph.Text = glyph;
         CopiedFill.SetResourceReference(Shape.FillProperty, colour);
         CopiedText.Text = label;
-        copiedWidth = Math.Max(124, 50 + label.Length * 6.4);
+        copiedWidth = Math.Max(130, 60 + label.Length * 7.4);
         ShowMoment(Island.Copied, ms);
     }
 
@@ -1334,6 +1368,7 @@ public partial class NotchWindow : Window
                 var ia = arg.Split(' ', 3);
                 ShowInfo(((char)Convert.ToInt32(ia[0], 16)).ToString(), ia[1], ia[2], 60000); return state.ToString();
             case "download": ShowDownload(arg); return state.ToString();
+            case "whatsnew": Look.ShowWhatsNew(arg); ShowSmart(new SmartInfo(SmartKind.WhatsNew, $"Updated to {arg}", "\uE789", new[] { new SmartAction("What's new") })); return state.ToString();
             case "update": ShowSmart(new SmartInfo(SmartKind.Update, $".light {arg} is out", "", new[] { new SmartAction("Update") })); return state.ToString();
             case "privacy": // privacy cam|mic|both|off  (draws the dots without reading Windows)
                 bool c = arg is "cam" or "both", m = arg is "mic" or "both";
@@ -1346,7 +1381,19 @@ public partial class NotchWindow : Window
                 privacyShown = c || m;
                 PrivacyDots.Visibility = privacyShown && !IsOpen ? Visibility.Visible : Visibility.Collapsed;
                 Layers.Margin = new Thickness(0, 0, privacyShown ? 16 : 0, 0);
-                Morph(state); return arg;
+                UpdateIdleLook(); Morph(state); return arg;
+            case "phone": // phone App|Title|Body|call
+                var pa = arg.Split('|');
+                var pn = new PhoneNote(pa[0], pa[1], pa.Length > 2 ? pa[2] : "", pa.Length > 3 && pa[3] == "call",
+                    PhoneNotes.FindCode(pa[1] + " " + (pa.Length > 2 ? pa[2] : "")), DateTime.Now);
+                PhoneInbox.Add(pn); ShowPhone(pn); return state + " code=" + (pn.Code ?? "none");
+            case "phonexml": // phonexml <file with a toast payload>
+                return PhoneNotes.Parse(File.ReadAllText(arg))?.ToString() ?? "null";
+            case "phonelink": // phonelink Name|battery
+                var pl = arg.Split('|');
+                OnPhone(new PhoneLink(pl[0], pl.Length > 1 ? int.Parse(pl[1]) : null)); return state.ToString();
+            case "clipon": Settings.Current.PhoneClipCode = arg; return phoneClip.Start() ?? "listening";
+            case "phonesetup": Settings.Current.PhoneClipCode ??= PhoneClipListener.NewCode(); ShowKnob("phone"); PhoneK.ShowSetup(); return "setup";
             case "snap": return snap(arg);
             default: return "unknown";
         }
@@ -1498,7 +1545,7 @@ public partial class NotchWindow : Window
         {
             ["timer"] = Settings.Current.ShowTimer, ["notes"] = Settings.Current.ShowNotes,
             ["snippets"] = Settings.Current.ShowSnippets, ["shelf"] = Settings.Current.ShowShelf,
-            ["convert"] = Settings.Current.ShowFileLab, ["claude"] = Settings.Current.AgentStatus,
+            ["convert"] = Settings.Current.ShowFileLab, ["claude"] = Settings.Current.AgentStatus, ["phone"] = Settings.Current.PhoneOn,
         };
         foreach (var (tag, visible) in on)
             TabFor(tag).Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
@@ -1568,7 +1615,7 @@ public partial class NotchWindow : Window
             if (agentNeeds.Remove(key)) { UpdateAgentText(); if (state == Island.Agent) Morph(Resting); }
             if (looking || fullscreenHidden || IsOpen || state is Island.Alarm or Island.Agent) return; // you're already looking, or something more important is up
             AgentDoneText.Text = ev.Project.Length > 0 ? $"Done · {ev.Project}" : "Claude is done";
-            agentDoneWidth = Math.Clamp(54 + AgentDoneText.Text.Length * 6.2, 120, 260);
+            agentDoneWidth = Math.Clamp(62 + AgentDoneText.Text.Length * 7.2, 130, 300);
             ShowMoment(Island.AgentDone, 4000);
             return;
         }
@@ -1589,8 +1636,9 @@ public partial class NotchWindow : Window
     {
         if (agentNeeds.Count == 0) return;
         var latest = agentNeeds.Values.Last();
-        AgentNeedsText.Text = agentNeeds.Count > 1 ? $"{agentNeeds.Count} sessions need your OK"
-            : latest.Project.Length > 0 ? $"Needs your OK · {latest.Project}" : "Claude needs your OK";
+        AgentNeedsText.Text = latest.Project.Length > 0 ? $"{latest.Project} needs your OK to continue" : "Claude needs your OK to continue";
+        AgentCount.Text = $"{agentNeeds.Count} waiting";
+        AgentCountBox.Visibility = agentNeeds.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
     }
 
     /// <summary>You switched to the terminal that asked: it's handled.</summary>
@@ -1704,15 +1752,15 @@ public partial class NotchWindow : Window
         PrivacyHead.ToolTip = string.Join(Environment.NewLine, parts);
         PrivacyHead.Visibility = any ? Visibility.Visible : Visibility.Collapsed;
 
-        // the dots sit inside the closed island (Line and Dot styles are too small for them; the panel lists them)
-        bool tooSmall = state == Island.Idle && Settings.Current.IslandStyle is "Line" or "Dot";
-        bool show = any && !AtMiddle && !tooSmall;
+        // the dots sit inside the closed island (a resting Line or Dot becomes a small pill to hold them)
+        bool show = any && !AtMiddle;
         PrivacyDots.Visibility = show && !IsOpen ? Visibility.Visible : Visibility.Collapsed;
         Layers.Margin = new Thickness(0, 0, show ? 16 : 0, 0);
         if (show != privacyShown)
         {
             privacyShown = show;
             if (show) FlashGlow(0.8);
+            UpdateIdleLook();
             Morph(state);
         }
     }
@@ -1746,7 +1794,7 @@ public partial class NotchWindow : Window
     {
         if (!Settings.Current.DownloadMoment) return;
         var name = System.IO.Path.GetFileName(path);
-        var info = new SmartInfo(SmartKind.Download, $"{name} downloaded", "\uE896", new[] { new SmartAction("Show", Reveal: path) });
+        var info = new SmartInfo(SmartKind.Download, $"Downloaded · {name}", "\uE896", new[] { new SmartAction("Show", Reveal: path) });
         ShowSmart(info, path);
     }
 
@@ -1765,9 +1813,140 @@ public partial class NotchWindow : Window
         Settings.Current.Save();
     }
 
+    // ---------- what's new, once after an update ----------
+
+    readonly DispatcherTimer whatsNewSoon = new() { Interval = TimeSpan.FromSeconds(6) };
+    readonly bool ranBefore = Settings.Current.Welcomed; // read before this start marks you as welcomed
+
+    static string ThisVersion => (System.Reflection.Assembly.GetEntryAssembly()?
+        .GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false)
+        .OfType<System.Reflection.AssemblyInformationalVersionAttribute>().FirstOrDefault()?.InformationalVersion ?? "")
+        .Split('+')[0];
+
+    void AnnounceUpdate()
+    {
+        var now = ThisVersion;
+        var before = Settings.Current.LastVersion;
+        if (Environment.GetEnvironmentVariable("LIGHT_TEST") != null || now.Length == 0 || before == now) return;
+        Settings.Current.LastVersion = now;
+        Settings.Current.Save();
+        if (before == null && !ranBefore) return; // a fresh install, not an update
+        Look.ShowWhatsNew(now); // waiting at the top of Look whenever you open it
+        ShowSmart(new SmartInfo(SmartKind.WhatsNew, $"Updated to {now}", "\uE789", new[] { new SmartAction("What's new") }));
+    }
+
     async Task InstallUpdate()
     {
         ShowInfo("\uE896", "Green", "Updating .light…", 30000);
         if (!await Updates.Install()) ShowCopied("Couldn't update, try again later", 2600);
+    }
+
+    // ---------- phone (through Phone Link) ----------
+
+    readonly DispatcherTimer phoneWatch = new() { Interval = TimeSpan.FromSeconds(2) };
+    readonly DispatcherTimer phoneStatusWatch = new() { Interval = TimeSpan.FromSeconds(8) };
+    readonly PhoneClipListener phoneClip = new();
+    PhoneNote? phoneShown;
+    string? lastPhoneName;
+    bool phoneLowShown, phoneReading;
+
+    void CheckPhoneNotes()
+    {
+        if (!Settings.Current.PhoneOn || phoneReading || Environment.GetEnvironmentVariable("LIGHT_TEST") != null) return;
+        phoneReading = true;
+        Task.Run(PhoneNotes.TakeNew).ContinueWith(t => Dispatcher.BeginInvoke(() =>
+        {
+            phoneReading = false;
+            if (t.IsFaulted) return;
+            foreach (var n in t.Result) { PhoneInbox.Add(n); ShowPhone(n); }
+        }));
+    }
+
+    /// <summary>A phone notification on the island: app and sender, the message if you allow it, a code to copy.</summary>
+    void ShowPhone(PhoneNote n)
+    {
+        if (!Settings.Current.PhoneOn) return;
+        if (Settings.Current.PhonePop && !fullscreenHidden) Chime.Done();
+        if (IsOpen || fullscreenHidden || state is Island.Alarm or Island.Agent) return; // it's in the Phone tab
+        phoneShown = n;
+        string who = n.App == "Phone" ? n.Title : $"{n.App} · {n.Title}";
+        if (n.IsCall)
+        {
+            CallName.Text = n.Title;
+            CallInitial.Text = n.Title.Length > 0 ? n.Title[..1].ToUpperInvariant() : "?";
+            ShowMoment(Island.Call, 15000);
+            return;
+        }
+        if (n.Code != null)
+        {
+            CodeBadgeText.Text = n.App.Length > 0 ? n.App[..1].ToUpperInvariant() : "•";
+            CodeTitle.Text = who;
+            CodeText.Text = n.Code.Length == 6 ? n.Code[..3] + " " + n.Code[3..] : n.Code;
+            ShowMoment(Island.PhoneCode, 12000);
+            return;
+        }
+        PhoneBadge.Fill = Palette.LimeBrush;
+        PhoneBadgeText.FontFamily = n.IsCall ? (FontFamily)FindResource("Icons") : new FontFamily("Segoe UI");
+        PhoneBadgeText.Text = n.IsCall ? "\uE717" : n.App.Length > 0 ? n.App[..1].ToUpperInvariant() : "\u2022";
+        PhoneTitle.Text = n.IsCall ? $"Call · {n.Title}" : n.App == "Phone" ? n.Title : $"{n.App} · {n.Title}";
+        PhoneBody.Text = n.IsCall ? "Incoming call"
+            : Settings.Current.PhoneShowMessage && n.Body.Length > 0 ? n.Body
+            : n.Code != null ? "Has a code" : "New message";
+        PhoneButton.Content = n.Code != null ? $"Copy {n.Code}" : n.IsCall ? "Open" : "";
+        PhoneButton.Visibility = n.Code != null || n.IsCall ? Visibility.Visible : Visibility.Collapsed;
+        ShowMoment(Island.Phone, n.IsCall ? 15000 : 5000);
+    }
+
+    void PhoneButton_Click(object sender, RoutedEventArgs e)
+    {
+        e.Handled = true;
+        draggedOut = true; // keep the island's own click from also running
+        if (phoneShown?.Code is string code) CopyCode(code);
+        else { PhoneInbox.OpenPhoneLink(); Morph(Resting); }
+    }
+
+    void CopyCode(string code)
+    {
+        pendingCopiedLabel = "Code copied";
+        try { Clipboard.SetText(code); }
+        catch { pendingCopiedLabel = null; ShowCopied("Clipboard busy, try again", 2200); }
+    }
+
+    async Task CheckPhone()
+    {
+        if (!Settings.Current.PhoneOn || Environment.GetEnvironmentVariable("LIGHT_TEST") != null) return;
+        OnPhone(await PhoneStatus.Find());
+    }
+
+    /// <summary>The phone connected, disconnected, or its battery changed.</summary>
+    void OnPhone(PhoneLink? p)
+    {
+        PhoneInbox.SetPhone(p);
+        if (p == null) { lastPhoneName = null; return; }
+        if (lastPhoneName != p.Name)
+        {
+            lastPhoneName = p.Name;
+            phoneLowShown = false;
+            ShowInfo("\uE8EA", "Green", p.Battery is int b ? $"{p.Name} connected · {b}%" : $"{p.Name} connected", 3000);
+            return;
+        }
+        if (p.Battery is int level && level <= 15 && !phoneLowShown)
+        {
+            phoneLowShown = true;
+            ShowInfo("\uE7BA", "Orange", $"{p.Name} battery low · {level}%", 5000);
+        }
+        else if (p.Battery is int ok && ok > 20) phoneLowShown = false;
+    }
+
+    /// <summary>Text the iPhone Shortcut sent: it goes on the clipboard (and so into the history).</summary>
+    string? lastPhoneText;
+
+    void FromPhoneClipboard(string text)
+    {
+        if (text == lastPhoneText) return; // the same copy sent again (an automation): nothing new
+        lastPhoneText = text;
+        pendingCopiedLabel = "From iPhone";
+        try { Clipboard.SetText(text); }
+        catch { pendingCopiedLabel = null; }
     }
 }

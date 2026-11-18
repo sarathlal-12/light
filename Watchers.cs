@@ -8,8 +8,10 @@ using WF = System.Windows.Forms;
 namespace DotLight;
 
 /// <summary>
-/// Which apps are using the camera or microphone right now. Reads (never changes) the record Windows
-/// keeps for its own privacy indicators: an app is "in use" while its stop time is still empty.
+/// Which apps are using the camera or microphone right now. Only reads, never changes anything.
+/// Mic: the apps Windows' audio system lists as recording from a microphone right now.
+/// Camera: the record Windows keeps for its privacy indicators (an app is "in use" while its stop time is
+/// empty). Some recent Windows builds stopped writing that record; there the camera dot can't show.
 /// </summary>
 static class Privacy
 {
@@ -20,7 +22,92 @@ static class Privacy
         var cam = new List<string>(); var mic = new List<string>();
         Scan("webcam", cam);
         Scan("microphone", mic);
+        foreach (var app in Recording()) if (!mic.Contains(app, StringComparer.OrdinalIgnoreCase)) mic.Add(app);
         return (cam, mic);
+    }
+
+    // ---- microphone: active capture sessions on every microphone ----
+
+    [ComImport, Guid("BCDE0395-E52F-467C-8E3D-C4579291692E")] class DeviceEnumeratorCom { }
+
+    [ComImport, Guid("A95664D2-9614-4F35-A746-DE8DB63617E6"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    interface IDeviceEnumerator { [PreserveSig] int EnumAudioEndpoints(int flow, int state, out IDeviceCollection devices); }
+
+    [ComImport, Guid("0BD7A1BE-7A1A-44DB-8397-CC5392387B5E"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    interface IDeviceCollection { [PreserveSig] int GetCount(out uint n); [PreserveSig] int Item(uint i, out IDevice d); }
+
+    [ComImport, Guid("D666063F-1587-4E43-81F1-B948E807363F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    interface IDevice { [PreserveSig] int Activate(ref Guid iid, int ctx, IntPtr p, [MarshalAs(UnmanagedType.IUnknown)] out object o); }
+
+    [ComImport, Guid("77AA99A0-1BD6-484F-8BC7-2C654C9A9B6F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    interface ISessionManager2
+    {
+        [PreserveSig] int GetAudioSessionControl(IntPtr a, int b, out IntPtr c);
+        [PreserveSig] int GetSimpleAudioVolume(IntPtr a, int b, out IntPtr c);
+        [PreserveSig] int GetSessionEnumerator(out ISessionEnumerator e);
+    }
+
+    [ComImport, Guid("E2F5BB11-0570-40CA-ACDD-3AA01277DEE8"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    interface ISessionEnumerator { [PreserveSig] int GetCount(out int n); [PreserveSig] int GetSession(int i, out ISessionControl2 s); }
+
+    [ComImport, Guid("bfb7ff88-7239-4fc9-8fa2-07c950be9c6d"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    interface ISessionControl2
+    {
+        [PreserveSig] int GetState(out int state);
+        [PreserveSig] int GetDisplayName(out IntPtr s);
+        [PreserveSig] int SetDisplayName(IntPtr s, IntPtr g);
+        [PreserveSig] int GetIconPath(out IntPtr s);
+        [PreserveSig] int SetIconPath(IntPtr s, IntPtr g);
+        [PreserveSig] int GetGroupingParam(out Guid g);
+        [PreserveSig] int SetGroupingParam(IntPtr g, IntPtr c);
+        [PreserveSig] int RegisterAudioSessionNotification(IntPtr n);
+        [PreserveSig] int UnregisterAudioSessionNotification(IntPtr n);
+        [PreserveSig] int GetSessionIdentifier(out IntPtr s);
+        [PreserveSig] int GetSessionInstanceIdentifier(out IntPtr s);
+        [PreserveSig] int GetProcessId(out uint pid);
+    }
+
+    /// <summary>Names of the apps recording from any microphone right now.</summary>
+    static List<string> Recording()
+    {
+        var names = new List<string>();
+        try
+        {
+            var en = (IDeviceEnumerator)new DeviceEnumeratorCom();
+            if (en.EnumAudioEndpoints(1 /* capture */, 1 /* active */, out var devices) != 0) return names;
+            devices.GetCount(out uint count);
+            var iid = typeof(ISessionManager2).GUID;
+            for (uint i = 0; i < count; i++)
+            {
+                if (devices.Item(i, out var dev) != 0) continue;
+                if (dev.Activate(ref iid, 1 /* in-process */, IntPtr.Zero, out var o) != 0) continue;
+                if (((ISessionManager2)o).GetSessionEnumerator(out var sessions) != 0) continue;
+                sessions.GetCount(out int n);
+                for (int s = 0; s < n; s++)
+                {
+                    if (sessions.GetSession(s, out var ctl) != 0) continue;
+                    ctl.GetState(out int state);
+                    ctl.GetProcessId(out uint pid);
+                    if (state == 1 /* active */ && pid != 0 && pid != Environment.ProcessId)
+                    {
+                        try
+                        {
+                            using var p = System.Diagnostics.Process.GetProcessById((int)pid);
+                            if (!names.Contains(p.ProcessName, StringComparer.OrdinalIgnoreCase)) names.Add(p.ProcessName);
+                        }
+                        catch { }
+                    }
+                    Marshal.ReleaseComObject(ctl);
+                }
+                Marshal.ReleaseComObject(sessions);
+                Marshal.ReleaseComObject(o);
+                Marshal.ReleaseComObject(dev);
+            }
+            Marshal.ReleaseComObject(devices);
+            Marshal.ReleaseComObject(en);
+        }
+        catch { }
+        return names;
     }
 
     static void Scan(string capability, List<string> into)

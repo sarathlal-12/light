@@ -1,0 +1,83 @@
+<UserControl x:Class="DotLight.Knobs.PhoneKnob"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Grid>
+    <!-- Recent phone notifications -->
+    <Grid x:Name="ListView">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="*"/>
+      </Grid.RowDefinitions>
+      <DockPanel>
+        <Button DockPanel.Dock="Right" Style="{StaticResource IconBtn}" Width="26" Height="26" FontSize="11"
+                Content="&#xE77F;" ToolTip="iPhone clipboard: send copies from your iPhone" Click="ClipSetup_Click"/>
+        <Button DockPanel.Dock="Right" Style="{StaticResource TextBtn}" Content="Phone Link" ToolTip="Open Phone Link"
+                Click="OpenLink_Click" VerticalAlignment="Center"/>
+        <StackPanel VerticalAlignment="Center">
+          <TextBlock x:Name="PhoneName" Text="Phone" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+          <TextBlock x:Name="PhoneLine" Text="Notifications from Phone Link" Foreground="{StaticResource Muted}" FontSize="10"/>
+        </StackPanel>
+      </DockPanel>
+      <ScrollViewer x:Name="EmptyHint" Grid.Row="1" Margin="0,8,0,0" VerticalScrollBarVisibility="Auto">
+        <StackPanel>
+          <TextBlock Text="Get your phone's notifications here" FontWeight="SemiBold" FontSize="11.5"/>
+          <TextBlock Foreground="{StaticResource Muted}" FontSize="10.5" TextWrapping="Wrap" Margin="0,4,0,0" LineHeight="15">
+            1. Open Phone Link on this PC and pair your phone (Android: the Link to Windows app; iPhone: Bluetooth).<LineBreak/>
+            2. In Phone Link's settings, turn on notifications.<LineBreak/>
+            3. Leave Phone Link running. New notifications show on the island and here.
+          </TextBlock>
+          <TextBlock Foreground="{StaticResource Muted}" FontSize="10.5" TextWrapping="Wrap" Margin="0,6,0,0">
+            Android copy and paste: turn on "Cross-device copy and paste" in Phone Link, and phone copies land in your clipboard.
+          </TextBlock>
+        </StackPanel>
+      </ScrollViewer>
+      <ScrollViewer x:Name="RowsBox" Grid.Row="1" Margin="0,6,0,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel x:Name="Rows"/>
+      </ScrollViewer>
+    </Grid>
+
+    <!-- iPhone clipboard: an Apple Shortcut sends copied text to .light over your Wi-Fi -->
+    <Grid x:Name="ClipView" Visibility="Collapsed">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="*"/>
+      </Grid.RowDefinitions>
+      <DockPanel>
+        <Button Style="{StaticResource IconBtn}" Width="26" Height="26" FontSize="11" Content="&#xE72B;" ToolTip="Back" Click="Back_Click"/>
+        <ToggleButton x:Name="ClipSwitch" DockPanel.Dock="Right" Style="{StaticResource Switch}" Click="ClipSwitch_Click" VerticalAlignment="Center"/>
+        <StackPanel VerticalAlignment="Center" Margin="6,0,0,0">
+          <TextBlock Text="iPhone clipboard" FontWeight="SemiBold"/>
+          <TextBlock Text="Send a copy from your iPhone with one tap" Foreground="{StaticResource Muted}" FontSize="10"/>
+        </StackPanel>
+      </DockPanel>
+      <ScrollViewer Grid.Row="1" Margin="0,8,0,0" VerticalScrollBarVisibility="Auto">
+        <StackPanel>
+          <StackPanel x:Name="ClipDetails">
+            <DockPanel>
+              <Button x:Name="CopyLinkBtn" DockPanel.Dock="Right" Style="{StaticResource ChipBtn}" Content="Copy" Click="CopyAddress_Click" VerticalAlignment="Center"
+                      ToolTip="The Shortcut asks for this first"/>
+              <TextBlock Text="Address" Foreground="{StaticResource Muted}" FontSize="10.5" Width="52" VerticalAlignment="Center"/>
+              <TextBlock x:Name="AddressText" FontSize="11" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+            </DockPanel>
+            <DockPanel Margin="0,5,0,0">
+              <Button DockPanel.Dock="Right" Style="{StaticResource ChipBtn}" Content="New code" Click="NewCode_Click" VerticalAlignment="Center" Margin="4,0,0,0"
+                      ToolTip="Make a new code. Your iPhone then needs the new one."/>
+              <Button x:Name="CopyCodeBtn" DockPanel.Dock="Right" Style="{StaticResource ChipBtn}" Content="Copy" Click="CopyCode_Click" VerticalAlignment="Center"
+                      ToolTip="The Shortcut asks for this second"/>
+              <TextBlock Text="Code" Foreground="{StaticResource Muted}" FontSize="10.5" Width="52" VerticalAlignment="Center"/>
+              <TextBlock x:Name="CodeText" FontSize="12" FontWeight="SemiBold" FontFamily="Cascadia Mono, Consolas" VerticalAlignment="Center"/>
+            </DockPanel>
+          </StackPanel>
+          <TextBlock x:Name="ClipError" Foreground="{DynamicResource Orange}" FontSize="10.5" TextWrapping="Wrap" Margin="0,4,0,0" Visibility="Collapsed"/>
+          <TextBlock Foreground="{StaticResource Muted}" FontSize="10.5" TextWrapping="Wrap" Margin="0,8,0,0" LineHeight="15">
+            On your iPhone:<LineBreak/>
+            1. Open sarath-apps.vercel.app/light, go to Setup, and tap Get the Shortcut ("Send to .light").<LineBreak/>
+            2. When you add it, it asks for the Address, then the Code: type the ones above.<LineBreak/>
+            3. Copy something and run it: from Control Center, the Action Button, Back Tap or the share sheet.<LineBreak/>
+            Phone and PC need to be on the same Wi-Fi. The first time, Windows asks whether .light may use the network: allow Private networks.
+          </TextBlock>
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+  </Grid>
+</UserControl>

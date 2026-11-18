@@ -58,8 +58,20 @@ class Settings
     public bool DownloadMoment { get; set; } = true;
     public bool UpdateNotice { get; set; } = true;
 
+    // Phone (through Phone Link): notifications on the island, message text, a pop.
+    public bool PhoneOn { get; set; } = true;
+    public bool PhoneShowMessage { get; set; }
+    public bool PhonePop { get; set; }
+
+    /// <summary>iPhone clipboard: listen for copies an Apple Shortcut sends over your Wi-Fi.</summary>
+    public bool PhoneClipOn { get; set; }
+    public string? PhoneClipCode { get; set; }
+
     /// <summary>Clipboard history is paused: new copies aren't saved.</summary>
     public bool ClipsPaused { get; set; }
+
+    /// <summary>The version that last ran, so .light can say once what's new after an update.</summary>
+    public string? LastVersion { get; set; }
 
     /// <summary>The newest version the update notice has already shown, so it shows only once.</summary>
     public string? UpdateShown { get; set; }

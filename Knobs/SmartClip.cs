@@ -5,7 +5,7 @@ using System.Windows.Media;
 
 namespace DotLight.Knobs;
 
-public enum SmartKind { Link, Colour, Path, Email, Phone, Json, Download, Update }
+public enum SmartKind { Link, Colour, Path, Email, Phone, Json, Download, Update, WhatsNew }
 
 /// <summary>Something you can do with a clip: copy a converted version, open it, or show it in Explorer.</summary>
 public sealed record SmartAction(string Label, string? CopyText = null, string? Open = null, string? Reveal = null);

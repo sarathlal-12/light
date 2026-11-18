@@ -42,8 +42,14 @@ the settings knob (gear) in the panel, or drag the open island by its top bar an
 - **Copied**: a quick blue check whenever you copy something.
 - **Claude Code**: when a Claude Code session needs your permission the island shows "Needs your OK" with the project
   name and pulses until you look; click it to bring that terminal forward. When Claude finishes you get a short
-  "Done" (skipped if you're already looking at that window). Turn it on in Look > Features > Claude Code status:
+  "Done" (skipped if you're already looking at that window) with a soft pop. Turn it on in Look > Features > Claude Code status:
   .light adds a small hook to `~/.claude/settings.json` (keeping a `.light-backup` copy) and removes it when you turn it off.
+- **Screenshot**: take a screenshot (or copy any picture) and a thumbnail shows for a few seconds. Drag it straight
+  into any app or folder.
+- **Phone**: notifications from your Android or iPhone (through Phone Link), with a **Copy** button for login codes,
+  incoming calls, and "connected · 82%" when the phone connects. See [Phone](#phone).
+- **Camera and mic**: a green dot while an app uses the camera, orange while one records from the microphone.
+- **Charging**, **download finished** (drag the file off the island) and **new version** moments.
 - **Focus timer**: while a timer runs the island shows the time left, with a light that drains away. At zero it rings
   (soft chime and pulsing light) until you click **Done**.
 
@@ -57,8 +63,11 @@ Scroll the mouse wheel over the island and it turns like a knob:
 
 - **Music** (green): whatever is playing on your PC (Spotify, YouTube in a browser, any app in
   Windows' media popup): cover, title, artist, progress bar, play/pause, next, previous.
-- **Clipboard** (blue): the last 50 things you copied (text and images). Search, pin, click to copy.
-  Skips anything password managers mark as private.
+- **Claude** (orange): every Claude Code session and what it's doing now: Working (with a timer), Needs your OK, or Done.
+  Click one to bring its window forward.
+- **Phone** (green): your phone's battery and its recent notifications (kept in memory only), plus the iPhone clipboard setup.
+- **Clipboard** (blue): the last 50 things you copied (text and images). Search, pin, click to copy, or drag a clip
+  into any app. Skips anything password managers mark as private; the pause button stops saving new copies.
 - **Timer** (orange): a kitchen-timer dial. Scroll over it to set minutes (Shift = 5 at a time) or pick 5/15/25/45, then Start.
 - **Notes** (green): quick notes saved as you type; pin one and it shows in the resting island.
 - **Snippets** (blue): prompts you use again and again. Click one and it's pasted into the app you were using
@@ -69,6 +78,30 @@ Scroll the mouse wheel over the island and it turns like a knob:
   compress; **PDF** puts all the images into one PDF; "Remove location and camera info" cleans photos before sharing
   (on by default). Opens WebP/HEIC/AVIF too. Drag images onto the island.
 - **Look** (gear): light colour, island style, clock, breathing light, features on/off, shortcuts, position, start with Windows.
+
+## Phone
+
+.light shows your phone's notifications through **Phone Link**, which comes with Windows. Nothing to install on the
+phone for iPhone; Android uses the **Link to Windows** app (already on many Android phones).
+
+1. Open **Phone Link** on your PC and pair your phone.
+2. In Phone Link's settings, turn on **notifications**, and leave Phone Link running.
+3. New notifications show on the island and in the **Phone** tab. A login code gets a **Copy** button.
+
+Look › Features has switches for phone notifications, showing the message text (off by default: only the app and
+sender show) and a pop sound. .light only reads notifications Windows already received; it can't reply or dismiss.
+
+**Copy on your phone, paste on your PC**
+- **Android**: turn on **Cross-device copy and paste** in Phone Link (or use the Microsoft SwiftKey keyboard with
+  clipboard sync). What you copy on the phone lands in the PC's clipboard and in .light's history automatically.
+- **iPhone**: iPhones don't share their clipboard in the background, so it's one tap with an Apple Shortcut:
+  1. In .light open the **Phone** tab, click the clipboard button, and turn on **iPhone clipboard**. Windows asks
+     whether .light may use the network: allow **Private networks**.
+  2. On the iPhone, add the **[Send to .light](https://www.icloud.com/shortcuts/43c3ab80086b4feaae0ea014122bb30d)** Shortcut. When you add it, it asks for the **Address**,
+     then the **Code**: type the ones .light shows on that page.
+  3. Copy something and run the Shortcut. Put it where it's one tap away: **Control Center** (Add a Control ›
+     Shortcut), the **Action Button**, **Back Tap** (Settings › Accessibility › Touch) or the share sheet.
+  Phone and PC must be on the same Wi-Fi. .light only accepts text from your own network with the right code.
 
 ## Grab text
 

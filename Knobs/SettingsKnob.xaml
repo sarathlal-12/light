@@ -56,6 +56,24 @@
   <ScrollViewer x:Name="Scroller" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
     <StackPanel x:Name="Rows" Margin="2,0,6,6">
 
+      <!-- What's new: shown after an update until you close it -->
+      <Border x:Name="WhatsNew" CornerRadius="12" Background="{StaticResource Surface}" Padding="11,9" Margin="0,0,0,12" Visibility="Collapsed">
+        <StackPanel>
+          <DockPanel>
+            <Button DockPanel.Dock="Right" Style="{StaticResource IconBtn}" Width="22" Height="22" FontSize="9" Content="&#xE711;"
+                    ToolTip="Hide" Click="WhatsNewClose_Click" VerticalAlignment="Top"/>
+            <TextBlock x:Name="WhatsNewTitle" Text="What's new" FontWeight="SemiBold"/>
+          </DockPanel>
+          <TextBlock Foreground="{StaticResource Muted}" FontSize="10.5" TextWrapping="Wrap" Margin="0,4,0,0" LineHeight="15">
+            • Phone tab: your Android or iPhone notifications through Phone Link, Copy buttons for login codes, calls and battery.<LineBreak/>
+            • Copy on the phone, paste on the PC: Android through Phone Link; iPhone with the "Send to .light" Shortcut (Phone tab, clipboard button).<LineBreak/>
+            • Claude tab: every Claude Code session, Working with a timer, Needs your OK or Done, and a soft pop when it finishes.<LineBreak/>
+            • Screenshots pop up on the island: drag them into any app. Clips drag out too, and the clipboard can be paused.<LineBreak/>
+            • Camera and mic dots, charging, finished downloads and update notices. Switch any of them off below.
+          </TextBlock>
+        </StackPanel>
+      </Border>
+
       <!-- Light colour -->
       <DockPanel>
         <TextBlock x:Name="LightName" DockPanel.Dock="Right" Foreground="{StaticResource Muted}" FontSize="11"

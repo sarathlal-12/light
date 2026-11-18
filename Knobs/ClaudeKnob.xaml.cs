@@ -119,7 +119,7 @@ public partial class ClaudeKnob : UserControl
         badge.Children.Add(new TextBlock
         {
             FontFamily = (FontFamily)FindResource("Icons"), Text = glyph, FontSize = 8.5,
-            Foreground = s.State == "working" ? Brushes.White : Brushes.Black,
+            Foreground = Brushes.Black,
             HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
         });
 
@@ -147,7 +147,7 @@ public partial class ClaudeKnob : UserControl
         return row;
     }
 
-    static readonly Brush WorkingC = Frozen(0x0A, 0x84, 0xFF), Needs = Frozen(0xFF, 0x9F, 0x0A), DoneC = Frozen(0x30, 0xD1, 0x58);
+    static readonly Brush WorkingC = Palette.SkyBrush, Needs = Palette.AmberBrush, DoneC = Palette.LimeBrush;
     static Brush Frozen(byte r, byte g, byte b) { var x = new SolidColorBrush(Color.FromRgb(r, g, b)); x.Freeze(); return x; }
 
     /// <summary>"12s", "4m 05s", "1h 20m".</summary>
