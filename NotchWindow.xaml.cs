@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -21,7 +21,7 @@ namespace DotLight;
 /// </summary>
 public partial class NotchWindow : Window
 {
-    enum Island { Idle, Music, Song, Copied, Smart, Dial, Timer, Alarm, Agent, AgentDone, Shot, Phone, PhoneCode, Call, Download, Power, Open }
+    enum Island { Idle, Music, Song, Copied, Smart, Dial, Timer, Alarm, Agent, AgentDot, AgentDone, Shot, Phone, PhoneCode, Call, Download, Power, Open }
 
     const double Gap = 3, SideGap = 10, MaxRadius = 48;
 
@@ -55,9 +55,12 @@ public partial class NotchWindow : Window
             if (privacyShown && style is "Line" or "Dot") return new Size(22, 18); // a small pill for the camera/mic dots
             if (style == "Line") return AtMiddle ? new Size(4, 120) : new Size(120, 4);
             if (style == "Dot") return new Size(12, 12);
-            if (!AtMiddle && pinnedNote != null) return new Size(noteWidth, 20);
-            return AtMiddle ? new Size(20, 110) : new Size(110, 20);
+            var rest = !AtMiddle && pinnedNote != null ? new Size(noteWidth, 20) : AtMiddle ? new Size(20, 110) : new Size(110, 20);
+            // a pet, grass, fire or the mood ring is showing: a bigger island so you can actually see them
+            if (FunBig) return AtMiddle ? new Size(30, rest.Height + 40) : new Size(Math.Max(rest.Width + 50, 160), 30);
+            return rest;
         }
+        if (s == Island.AgentDot) return AtMiddle ? new Size(20, 44) : new Size(44, 20);
         if (AtMiddle && s is Island.Music or Island.Copied or Island.Timer)
             return s switch
             {
@@ -140,7 +143,7 @@ public partial class NotchWindow : Window
         Pos.EndsWith("Left") ? HorizontalAlignment.Left :
         Pos.EndsWith("Right") ? HorizontalAlignment.Right : HorizontalAlignment.Center;
     // Music shows once (the "now playing" moment) and then the island rests; hover to see the player.
-    Island Resting => agentNeeds.Count > 0 ? Island.Agent : FocusTimer.Active ? Island.Timer : Island.Idle;
+    Island Resting => agentNeeds.Count > 0 ? (agentShrunk ? Island.AgentDot : Island.Agent) : FocusTimer.Active ? Island.Timer : Island.Idle;
 
     DateTime lastSound = DateTime.Now;
     bool musicSilent;
@@ -154,7 +157,7 @@ public partial class NotchWindow : Window
 
         // Opens the instant the cursor reaches the island or the top edge.
         collapseDelay.Tick += (_, _) => { collapseDelay.Stop(); if (!ShouldStayOpen()) Collapse(); };
-        edgeWatch.Tick += (_, _) => { if (!IsOpen && !fullscreenHidden && state is not (Island.Dial or Island.Smart or Island.Alarm or Island.Agent or Island.Shot or Island.Phone or Island.PhoneCode or Island.Call or Island.Download or Island.Power) && !dragging && CursorAtEdge()) Expand(byKey: false); };
+        edgeWatch.Tick += (_, _) => { if (!IsOpen && !fullscreenHidden && state is not (Island.Dial or Island.Smart or Island.Alarm or Island.Agent or Island.Shot or Island.Phone or Island.PhoneCode or Island.Call or Island.Download or Island.Power) && !dragging && !ShyBlocks && CursorAtEdge()) Expand(byKey: false); FunEdgeTick(); };
 
         // Resting face: the clock ticks over, a pinned note shows instead.
         clockTick.Tick += (_, _) => UpdateClock();
@@ -210,6 +213,7 @@ public partial class NotchWindow : Window
         PhoneK.SetClipListener = on => { if (on) return phoneClip.Start(); phoneClip.Stop(); return null; };
         phoneClip.Received += text => Dispatcher.BeginInvoke(() => FromPhoneClipboard(text));
         if (Settings.Current.PhoneClipOn && Environment.GetEnvironmentVariable("LIGHT_TEST") == null) phoneClip.Start();
+        agentShrink.Tick += (_, _) => { agentShrink.Stop(); agentShrunk = true; if (state == Island.Agent && !CursorOverIsland()) Morph(Resting); };
         agentPulse.Tick += (_, _) => { if (state == Island.Agent) FlashGlow(0.8); else agentPulse.Stop(); };
         Theme.Changed += () => TabLightGlow.Color = TabColour(currentTab);
         fullscreenWatch.Tick += (_, _) => { CheckFullscreen(); CheckAgentSeen(); };
@@ -234,7 +238,9 @@ public partial class NotchWindow : Window
             if (state == Island.Alarm) DismissAlarm();
             else if (state == Island.Agent) ShowAgentWindow();
             else if (state == Island.Shot) { Expand(byKey: false); ShowKnob("clips"); }
-            else if (state is Island.Phone or Island.PhoneCode or Island.Call) { PhoneInbox.OpenPhoneLink(); Morph(Resting); }
+            else if (state == Island.Call) { PhoneInbox.OpenPhoneLink(); Morph(Resting); } // answer it in Phone Link
+            else if (state is Island.Phone or Island.PhoneCode) { Expand(byKey: false); ShowKnob("phone"); } // the Phone tab has an "Open Phone Link" button
+            else if (state == Island.AgentDot) ShowAgentWindow();
             else if (!IsOpen) Expand(byKey: false);
         };
         // Drag a screenshot or a finished download straight off the island.
@@ -246,12 +252,15 @@ public partial class NotchWindow : Window
         {
             collapseDelay.Stop();
             if (state is Island.Smart or Island.Shot or Island.Phone or Island.PhoneCode or Island.Call or Island.Download or Island.Power) { momentEnd.Stop(); return; } // hold it so it can be clicked or dragged
-            if (state is Island.Alarm or Island.Agent) return;
+            if (state == Island.AgentDot) { agentShrink.Stop(); Morph(Island.Agent); return; } // hover the dot: the full card again
+            if (state is Island.Alarm or Island.Agent) { agentShrink.Stop(); return; }
+            if (ShyBlocks) return; // shy mode: hold Ctrl to catch it
             if (!IsOpen) Expand(byKey: false);
         };
         Shell.MouseLeave += (_, _) =>
         {
             if (IsOpen) collapseDelay.Start();
+            else if (state == Island.Agent) { agentShrink.Interval = TimeSpan.FromMilliseconds(1500); agentShrink.Stop(); agentShrink.Start(); }
             else if (state is Island.Smart or Island.Shot or Island.Phone or Island.PhoneCode or Island.Call or Island.Download or Island.Power) { momentEnd.Interval = TimeSpan.FromMilliseconds(1500); momentEnd.Start(); }
         };
 
@@ -303,6 +312,7 @@ public partial class NotchWindow : Window
         Header.MouseLeftButtonUp += Header_Up;
         Look.PositionPicked += p => SetPosition(p, animate: true);
         PositionChanged += () => Look.Refresh();
+        InitFun();
     }
 
     // ---------- position ----------
@@ -322,7 +332,7 @@ public partial class NotchWindow : Window
     /// Puts the window in its spot on the main screen (above the taskbar for bottom spots) and
     /// anchors the island so it grows down from the top, or up from the bottom.
     /// </summary>
-    void Place(bool animate = false)
+    void Place(bool animate = false, bool quick = false)
     {
         var area = SystemParameters.WorkArea;
         double left = Side switch
@@ -334,6 +344,7 @@ public partial class NotchWindow : Window
         double top = AtBottom ? area.Bottom - Height
                    : AtMiddle ? area.Top + (area.Height - Height) / 2
                    : area.Top;
+        left += shyDx; top += shyDy; // shy mode: hopped out of the cursor's way
 
         // Top spots grow down, bottom spots grow up, side-middle spots grow out from their centre.
         Shell.HorizontalAlignment = Side;
@@ -347,7 +358,8 @@ public partial class NotchWindow : Window
         Full.VerticalAlignment = AtBottom ? VerticalAlignment.Bottom : AtMiddle ? VerticalAlignment.Center : VerticalAlignment.Top;
         Full.Margin = AtBottom ? new Thickness(0, 0, 0, 10) : AtMiddle ? new Thickness(0, 1, 0, 0) : new Thickness(0, 12, 0, 0);
 
-        if (animate)
+        if (animate && quick) FastMove(left, top); // shy mode: a quick hop, drawn every screen frame
+        else if (animate)
         {
             Glide(LeftProperty, Left, left);
             Glide(TopProperty, Top, top);
@@ -579,7 +591,9 @@ public partial class NotchWindow : Window
         height.Target = size.Height;
         Full.IsHitTestVisible = to == Island.Open;
         AgentNeeds.IsHitTestVisible = to == Island.Agent;
-        Rim.SetResourceReference(Border.BorderBrushProperty, to is Island.Alarm or Island.Agent ? "Orange" : "Green");
+        RimColour();
+        if (to == Island.AgentDot) AgentDotLight.BeginAnimation(OpacityProperty, Breathing(0.35, 1));
+        else if (from == Island.AgentDot) AgentDotLight.BeginAnimation(OpacityProperty, null);
         if (to != Island.Open) DropZones.Visibility = Visibility.Collapsed;
         PrivacyDots.Visibility = privacyShown && to != Island.Open ? Visibility.Visible : Visibility.Collapsed;
         if (to == Island.Agent) agentPulse.Start();
@@ -597,6 +611,8 @@ public partial class NotchWindow : Window
         else if (from == Island.Open) HideFullWhenFaded();
         SwapContent(LayerOf(from), LayerOf(to));
         StartAnimating();
+        UpdateFunLook();
+        if (shyAway && to is not (Island.Idle or Island.Music or Island.Timer)) ShyBack(); // moments show in the usual spot
     }
 
     void StartAnimating()
@@ -665,6 +681,7 @@ public partial class NotchWindow : Window
         Island.Timer => TimerIsland,
         Island.Alarm => AlarmMoment,
         Island.Agent => AgentNeeds,
+        Island.AgentDot => AgentDotLayer,
         Island.AgentDone => AgentDone,
         Island.Music => CompactMusic,
         Island.Song => SongMoment,
@@ -800,6 +817,8 @@ public partial class NotchWindow : Window
         {
             Shell.BeginAnimation(OpacityProperty, Ease(1, 320));
         }
+        UpdateFunLook();
+        if (!glowTick.IsEnabled) Rim.Opacity = RestingRim;
         Apply(); // update the clickable area
     }
 
@@ -929,7 +948,8 @@ public partial class NotchWindow : Window
         double target = musicPlaying && !musicSilent && (IsOpen || state == Island.Song) ? 0.14 + 0.5 * level : 0;
         glow += (target - glow) * (target > glow ? 0.45 : 0.12);
         glowFlash *= 0.9;
-        Rim.Opacity = Math.Clamp(Math.Max(glow, glowFlash), 0, 1);
+        if (fire > 0) { fire = fire < 0.01 ? 0 : fire * 0.968; RimColour(); CheckFunSize(); } // typing fire cools down
+        Rim.Opacity = Math.Clamp(Math.Max(Math.Max(glow, glowFlash), Math.Max(fire * 0.95, RestingRim)), 0, 1);
 
         // The little wave bars follow the real sound too.
         if (musicPlaying)
@@ -939,11 +959,12 @@ public partial class NotchWindow : Window
             if (IsOpen) { DriveWave(Music.WavePanel, level); Music.SetLevel(level); }
         }
 
-        if (!musicPlaying && glow < 0.01 && glowFlash < 0.01)
+        if (!musicPlaying && glow < 0.01 && glowFlash < 0.01 && fire < 0.01)
         {
             glowTick.Stop(); // idle: nothing to draw
-            glow = glowFlash = 0;
-            Rim.Opacity = 0;
+            glow = glowFlash = fire = 0;
+            RimColour();
+            Rim.Opacity = RestingRim;
         }
     }
 
@@ -1023,7 +1044,7 @@ public partial class NotchWindow : Window
         bool swiping = now - lastTrackAt < TimeSpan.FromSeconds(45);
         lastTrackAt = now;
         if (!Settings.Current.SongPopup || swiping) return;
-        ShowMoment(Island.Song, 4000);
+        ShowMoment(Island.Song, 2000);
     }
 
     DateTime lastTrackAt = DateTime.MinValue;
@@ -1251,8 +1272,9 @@ public partial class NotchWindow : Window
         bool h24 = System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.ShortTimePattern.Contains('H');
         string text = AtMiddle
             ? $"{(h24 ? now.ToString("HH") : now.ToString("%h"))}\n{now:mm}"
-            : now.ToString(h24 ? "HH:mm" : "h:mm");
+            : now.ToString(h24 ? "HH:mm" : "h:mm") + (nightLook ? " zz" : "");
         if (IdleClock.Text != text) IdleClock.Text = text;
+        IdleClock.FontSize = FunBig && !AtMiddle ? 12.5 : 10.5;
     }
 
     /// <summary>Thin line and Dot are lit from inside; Outline keeps a lit rim; breathing glows slowly in and out.</summary>
@@ -1395,6 +1417,10 @@ public partial class NotchWindow : Window
                 OnAgent(new AgentEvent(ag[0], "test-" + (ag.Length > 1 ? ag[1] : ""), ag.Length > 1 ? ag[1] : "", "", IntPtr.Zero));
                 return state.ToString();
             case "lastagent": return Agent.LastReceived?.ToString() ?? "none";
+            case "okcard": // the "needs your OK" card without Claude (the Claude app is in front during tests)
+                agentNeeds["test"] = new AgentEvent("needs", "test", arg, "", IntPtr.Zero); UpdateAgentText();
+                agentShrunk = false; agentShrink.Interval = TimeSpan.FromSeconds(5); agentShrink.Stop(); agentShrink.Start();
+                momentEnd.Stop(); Morph(Resting); return state.ToString();
             case "agentclear": agentNeeds.Clear(); Morph(Resting); return "cleared";
             case "feature": // feature SettingName on|off
                 var fa = arg.Split(' ');
@@ -1453,7 +1479,7 @@ public partial class NotchWindow : Window
             case "song": OnTrackChanged("[Song title]", "[Artist]", null); return state.ToString();
             case "vol": ShowDial("\uE995", arg, double.Parse(arg) / 2, "Volume", double.Parse(arg) / 100); return state.ToString();
             case "snap": return snap(arg);
-            default: return "unknown";
+            default: return FunTest(cmd, arg) ?? "unknown";
         }
     }
 
@@ -1619,6 +1645,7 @@ public partial class NotchWindow : Window
         }
         else if (!Settings.Current.DownloadMoment && downloads != null) { downloads.Dispose(); downloads = null; }
         UpdatePrivacy();
+        ApplyFun();
         Dispatcher.BeginInvoke(() => MoveTabLight(animate: false), DispatcherPriority.Loaded);
     }
 
@@ -1651,6 +1678,8 @@ public partial class NotchWindow : Window
 
     readonly Dictionary<string, AgentEvent> agentNeeds = new();
     readonly DispatcherTimer agentPulse = new() { Interval = TimeSpan.FromMilliseconds(1600) };
+    readonly DispatcherTimer agentShrink = new() { Interval = TimeSpan.FromSeconds(5) };
+    bool agentShrunk;
 
     void OnAgent(AgentEvent ev)
     {
@@ -1663,18 +1692,19 @@ public partial class NotchWindow : Window
             if (agentNeeds.Remove(key)) { UpdateAgentText(); if (state == Island.Agent && agentNeeds.Count == 0) Morph(Resting); }
             return;
         }
-        // In a terminal, having that window in front means you can see the prompt. The Claude desktop app
-        // holds many sessions in one window, so being in it doesn't mean you saw this one: always show.
-        bool looking = ev.Window != IntPtr.Zero && Native.GetForegroundWindow() == ev.Window && !IsClaudeApp(ev.Window);
+        // Claude is the window you're using (the Claude app, or a terminal running Claude Code): you can
+        // already see it, so no popup and no sound. The Claude tab still keeps every session's status.
+        bool looking = ClaudeInFront(ev.Window);
 
         if (ev.Kind == "done")
         {
-            if (!fullscreenHidden) Chime.Done(); // a softer pop; stays quiet over a full-screen game or video
+            if (!fullscreenHidden && !looking) Chime.Done(); // a softer pop; stays quiet over a full-screen game or video
             if (agentNeeds.Remove(key)) { UpdateAgentText(); if (state == Island.Agent) Morph(Resting); }
             if (looking || fullscreenHidden || IsOpen || state is Island.Alarm or Island.Agent) return; // you're already looking, or something more important is up
             AgentDoneText.Text = ev.Project.Length > 0 ? $"Done · {ev.Project}" : "Claude is done";
             agentDoneWidth = Math.Clamp(62 + AgentDoneText.Text.Length * 7.2, 130, 300);
             ShowMoment(Island.AgentDone, 4000);
+            if (state == Island.AgentDone) Confetti();
             return;
         }
 
@@ -1682,8 +1712,10 @@ public partial class NotchWindow : Window
         agentNeeds.Remove(key);
         agentNeeds[key] = ev; // newest last
         UpdateAgentText();
-        if (!fullscreenHidden) Chime.Pop(); // stays quiet over a full-screen game or video
-        if (IsOpen || fullscreenHidden || state is Island.Alarm) return; // shows when the panel closes
+        // The card shows for 5 seconds, then shrinks to a small orange dot until you answer.
+        agentShrunk = false;
+        agentShrink.Interval = TimeSpan.FromSeconds(5); agentShrink.Stop(); agentShrink.Start();
+        if (!fullscreenHidden) Chime.Pop(); // stays quiet over a full-screen game or video        if (IsOpen || fullscreenHidden || state is Island.Alarm) return; // shows when the panel closes
         momentEnd.Stop();
         Morph(Island.Agent);
         FlashGlow(1);
@@ -1712,10 +1744,25 @@ public partial class NotchWindow : Window
         return claudeWindowIs;
     }
 
+    /// <summary>True when the Claude app, or a terminal one of your Claude Code sessions runs in, is in front.</summary>
+    static bool ClaudeInFront(IntPtr sessionWindow)
+    {
+        var fg = Native.GetForegroundWindow();
+        if (fg == IntPtr.Zero) return false;
+        return fg == sessionWindow || IsClaudeApp(fg) || ClaudeSessions.All.Any(s => s.Window == fg);
+    }
+
     void CheckAgentSeen()
     {
         if (agentNeeds.Count == 0) return;
         var fg = Native.GetForegroundWindow();
+        if (IsClaudeApp(fg))
+        {
+            // You switched to the Claude app: the popup steps aside (the Claude tab still says who's waiting).
+            agentNeeds.Clear();
+            if (state is Island.Agent or Island.AgentDot) Morph(Resting);
+            return;
+        }
         var seen = agentNeeds.Where(kv => kv.Value.Window != IntPtr.Zero && kv.Value.Window == fg && !IsClaudeApp(fg)).Select(kv => kv.Key).ToList();
         if (seen.Count == 0) return;
         foreach (var k in seen) { agentNeeds.Remove(k); ClaudeSessions.Seen(k); }
@@ -1914,6 +1961,7 @@ public partial class NotchWindow : Window
         downloadShown = path;
         momentDragFile = path;
         ShowMoment(Island.Download, 6000);
+        if (state == Island.Download) Confetti();
     }
 
     string? downloadShown;

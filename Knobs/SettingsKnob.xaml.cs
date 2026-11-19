@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
@@ -28,25 +28,35 @@ public partial class SettingsKnob : UserControl
     /// <summary>Raised when a feature is switched on or off.</summary>
     public event Action? FeaturesChanged;
 
-    /// <summary>The features that can be switched off: (label, read, write).</summary>
-    static readonly (string Label, Func<bool> Get, Action<bool> Set)[] Features =
+    /// <summary>The switches, in groups: (group, label, hint, read, write).</summary>
+    static readonly (string Group, string Label, string? Hint, Func<bool> Get, Action<bool> Set)[] Features =
     {
-        ("Snippets", () => Settings.Current.ShowSnippets, v => Settings.Current.ShowSnippets = v),
-        ("File shelf", () => Settings.Current.ShowShelf, v => Settings.Current.ShowShelf = v),
-        ("Grab image", () => Settings.Current.GrabImageOn, v => Settings.Current.GrabImageOn = v),
-        ("Grab text", () => Settings.Current.GrabTextOn, v => Settings.Current.GrabTextOn = v),
-        ("Focus timer", () => Settings.Current.ShowTimer, v => Settings.Current.ShowTimer = v),
-        ("Notes", () => Settings.Current.ShowNotes, v => Settings.Current.ShowNotes = v),
-        ("File lab", () => Settings.Current.ShowFileLab, v => Settings.Current.ShowFileLab = v),
-        ("Now playing popup", () => Settings.Current.SongPopup, v => Settings.Current.SongPopup = v),
-        ("Screenshot moment", () => Settings.Current.ShotMoment, v => Settings.Current.ShotMoment = v),
-        ("Camera and mic dots", () => Settings.Current.PrivacyDots, v => Settings.Current.PrivacyDots = v),
-        ("Charging and battery", () => Settings.Current.PowerMoment, v => Settings.Current.PowerMoment = v),
-        ("Download finished", () => Settings.Current.DownloadMoment, v => Settings.Current.DownloadMoment = v),
-        ("Update notice", () => Settings.Current.UpdateNotice, v => Settings.Current.UpdateNotice = v),
-        ("Phone notifications", () => Settings.Current.PhoneOn, v => Settings.Current.PhoneOn = v),
-        ("Show phone message text", () => Settings.Current.PhoneShowMessage, v => Settings.Current.PhoneShowMessage = v),
-        ("Pop for phone notifications", () => Settings.Current.PhonePop, v => Settings.Current.PhonePop = v),
+        ("Tabs", "Snippets", null, () => Settings.Current.ShowSnippets, v => Settings.Current.ShowSnippets = v),
+        ("Tabs", "File shelf", null, () => Settings.Current.ShowShelf, v => Settings.Current.ShowShelf = v),
+        ("Tabs", "Focus timer", null, () => Settings.Current.ShowTimer, v => Settings.Current.ShowTimer = v),
+        ("Tabs", "Notes", null, () => Settings.Current.ShowNotes, v => Settings.Current.ShowNotes = v),
+        ("Tabs", "File lab", null, () => Settings.Current.ShowFileLab, v => Settings.Current.ShowFileLab = v),
+        ("Tabs", "Grab text", null, () => Settings.Current.GrabTextOn, v => Settings.Current.GrabTextOn = v),
+        ("Tabs", "Grab image", null, () => Settings.Current.GrabImageOn, v => Settings.Current.GrabImageOn = v),
+        ("Popups", "Now playing", "A 2-second popup when the song or video changes", () => Settings.Current.SongPopup, v => Settings.Current.SongPopup = v),
+        ("Popups", "Screenshots", "Drag a new screenshot straight off the island", () => Settings.Current.ShotMoment, v => Settings.Current.ShotMoment = v),
+        ("Popups", "Camera and mic dots", null, () => Settings.Current.PrivacyDots, v => Settings.Current.PrivacyDots = v),
+        ("Popups", "Charging and battery", null, () => Settings.Current.PowerMoment, v => Settings.Current.PowerMoment = v),
+        ("Popups", "Downloads", "When a download finishes", () => Settings.Current.DownloadMoment, v => Settings.Current.DownloadMoment = v),
+        ("Popups", "Update notice", null, () => Settings.Current.UpdateNotice, v => Settings.Current.UpdateNotice = v),
+        ("Phone", "Phone notifications", "Through Phone Link", () => Settings.Current.PhoneOn, v => Settings.Current.PhoneOn = v),
+        ("Phone", "Show message text", null, () => Settings.Current.PhoneShowMessage, v => Settings.Current.PhoneShowMessage = v),
+        ("Phone", "Pop sound", "A soft pop for phone notifications", () => Settings.Current.PhonePop, v => Settings.Current.PhonePop = v),
+        ("Fun", "Island pet", "A little lime blob lives on the resting island. It naps when you're away and watches you type", () => Settings.Current.Pet, v => Settings.Current.Pet = v),
+        ("Fun", "Shy mode", "The island runs from your mouse. Hold Ctrl to catch it", () => Settings.Current.ShyMode, v => Settings.Current.ShyMode = v),
+        ("Fun", "Typing fire", "The rim glows warmer the faster you type (counts key presses, never reads them)", () => Settings.Current.TypingFire, v => Settings.Current.TypingFire = v),
+        ("Fun", "Confetti", "When Claude finishes, a download is done or you empty the Recycle Bin", () => Settings.Current.Confetti, v => Settings.Current.Confetti = v),
+        ("Fun", "Rage-click detector", "Click the same spot five times fast and the island tells you to calm down", () => Settings.Current.RageClick, v => Settings.Current.RageClick = v),
+        ("Fun", "Mood ring", "When you open the island, its rim shows how busy your CPU and GPU are, calm blue to busy red, with the numbers in the top bar", () => Settings.Current.MoodRing, v => Settings.Current.MoodRing = v),
+        ("Fun", "Touch grass", "After an hour at the PC, grass grows on the island until you take a break", () => Settings.Current.TouchGrass, v => Settings.Current.TouchGrass = v),
+        ("Fun", "Night owl", "After midnight the island yawns and its clock gets sleepy", () => Settings.Current.NightOwl, v => Settings.Current.NightOwl = v),
+        ("Fun", "Temperatures", "CPU and GPU temperatures in the open panel's top bar, if your PC reports them", () => Settings.Current.Temps, v => Settings.Current.Temps = v),
+        ("Fun", "Drink water", "Every 45 minutes at the PC, a reminder to drink some water", () => Settings.Current.WaterReminder, v => Settings.Current.WaterReminder = v),
     };
     readonly List<(ToggleButton Switch, Func<bool> Get)> featureSwitches = new();
 
@@ -124,22 +134,33 @@ public partial class SettingsKnob : UserControl
 
     void BuildFeatures()
     {
-        foreach (var (label, get, set) in Features)
+        // Each group: a small heading, then its switches in two columns.
+        foreach (var group in Features.GroupBy(f => f.Group))
         {
-            var sw = new ToggleButton { Style = (Style)FindResource("Switch"), VerticalAlignment = VerticalAlignment.Center, IsChecked = get() };
-            sw.Click += (_, _) =>
+            FeatureRows.Children.Add(new TextBlock
             {
-                set(sw.IsChecked == true);
-                Settings.Current.Save();
-                Refresh();
-                FeaturesChanged?.Invoke();
-            };
-            DockPanel.SetDock(sw, Dock.Right);
-            var row = new DockPanel { Margin = new Thickness(0, 7, 0, 0) };
-            row.Children.Add(sw);
-            row.Children.Add(new TextBlock { Text = label, VerticalAlignment = VerticalAlignment.Center });
-            FeatureRows.Children.Add(row);
-            featureSwitches.Add((sw, get));
+                Text = group.Key.ToUpperInvariant(), FontSize = 9.5, FontWeight = FontWeights.SemiBold,
+                Foreground = (Brush)FindResource("Muted"), Margin = new Thickness(0, 12, 0, 0),
+            });
+            var grid = new UniformGrid { Columns = 2 };
+            foreach (var (_, label, hint, get, set) in group)
+            {
+                var sw = new ToggleButton { Style = (Style)FindResource("Switch"), VerticalAlignment = VerticalAlignment.Center, IsChecked = get() };
+                sw.Click += (_, _) =>
+                {
+                    set(sw.IsChecked == true);
+                    Settings.Current.Save();
+                    Refresh();
+                    FeaturesChanged?.Invoke();
+                };
+                DockPanel.SetDock(sw, Dock.Right);
+                var row = new DockPanel { Margin = new Thickness(0, 7, 14, 0), Background = Brushes.Transparent, ToolTip = hint };
+                row.Children.Add(sw);
+                row.Children.Add(new TextBlock { Text = label, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis });
+                grid.Children.Add(row);
+                featureSwitches.Add((sw, get));
+            }
+            FeatureRows.Children.Add(grid);
         }
     }
 

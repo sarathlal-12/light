@@ -1,4 +1,4 @@
-<UserControl x:Class="DotLight.Knobs.SettingsKnob"
+﻿<UserControl x:Class="DotLight.Knobs.SettingsKnob"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <UserControl.Resources>
@@ -65,11 +65,10 @@
             <TextBlock x:Name="WhatsNewTitle" Text="What's new" FontWeight="SemiBold"/>
           </DockPanel>
           <TextBlock Foreground="{StaticResource Muted}" FontSize="10.5" TextWrapping="Wrap" Margin="0,4,0,0" LineHeight="15">
-            • Phone tab: your Android or iPhone notifications through Phone Link, Copy buttons for login codes, calls and battery.<LineBreak/>
-            • Copy on the phone, paste on the PC: Android through Phone Link; iPhone with the "Send to .light" Shortcut (Phone tab, clipboard button).<LineBreak/>
-            • Claude tab: every Claude Code session, Working with a timer, Needs your OK or Done, and a soft pop when it finishes.<LineBreak/>
-            • Screenshots pop up on the island: drag them into any app. Clips drag out too, and the clipboard can be paused.<LineBreak/>
-            • Camera and mic dots, charging, finished downloads and update notices. Switch any of them off below.
+            • Fun switches (all off until you try them): an island pet, shy mode, typing fire, confetti, a rage-click detector, a CPU and GPU mood ring, CPU and GPU temperatures, touch grass, night owl and a drink-water reminder. Find them under Fun below.<LineBreak/>
+            • Claude's "needs your OK" card shrinks to a small orange dot after 5 seconds, and Claude popups stay away while Claude is the window you're using.<LineBreak/>
+            • Clicking a phone message opens the Phone tab. The now-playing popup is shorter (2 seconds).<LineBreak/>
+            • Settings are tidier: switches are grouped into Tabs, Popups, Phone and Fun.
           </TextBlock>
         </StackPanel>
       </Border>
@@ -102,7 +101,7 @@
 
       <!-- Features: switch any of them off -->
       <TextBlock Text="Features" FontWeight="SemiBold" Margin="0,14,0,0"/>
-      <TextBlock Text="Turn off what you don't use; its tab and shortcut go away." Foreground="{StaticResource Muted}" FontSize="10.5" Margin="0,1,0,0" TextWrapping="Wrap"/>
+      <TextBlock Text="Turn off what you don't use. Hover a switch to see what it does." Foreground="{StaticResource Muted}" FontSize="10.5" Margin="0,1,0,0" TextWrapping="Wrap"/>
       <DockPanel Margin="0,8,0,0">
         <ToggleButton x:Name="AgentSwitch" DockPanel.Dock="Right" Style="{StaticResource Switch}" Click="Agent_Click" VerticalAlignment="Center"/>
         <StackPanel VerticalAlignment="Center">

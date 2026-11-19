@@ -69,6 +69,18 @@ class Settings
     public bool PhoneClipOn { get; set; }
     public string? PhoneClipCode { get; set; }
 
+    // Fun features, all off until you switch them on (Look > Fun).
+    public bool Pet { get; set; }
+    public bool ShyMode { get; set; }
+    public bool TypingFire { get; set; }
+    public bool Confetti { get; set; }
+    public bool RageClick { get; set; }
+    public bool MoodRing { get; set; }
+    public bool TouchGrass { get; set; }
+    public bool NightOwl { get; set; }
+    public bool WaterReminder { get; set; }
+    public bool Temps { get; set; }
+
     /// <summary>Clipboard history is paused: new copies aren't saved.</summary>
     public bool ClipsPaused { get; set; }
 
