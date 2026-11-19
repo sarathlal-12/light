@@ -103,6 +103,23 @@ sender show) and a pop sound. .light only reads notifications Windows already re
      Shortcut), the **Action Button**, **Back Tap** (Settings › Accessibility › Touch) or the share sheet.
   Phone and PC must be on the same Wi-Fi. .light only accepts text from your own network with the right code.
 
+## Fun
+
+All off until you switch them on in **Look › Features › Fun**. Each has its own switch and costs nothing while off.
+
+- **Island pet**: a little lime blob on the resting island. It breathes, follows your cursor with its eyes, bounces as you
+  type, naps when you're away and hops when you're back.
+- **Shy mode**: the island runs from your mouse. Hold **Ctrl** to catch it.
+- **Typing fire**: the rim glows warmer the faster you type (it counts key presses, never reads them).
+- **Confetti**: when Claude finishes, a download is done or you empty the Recycle Bin.
+- **Rage-click detector**: click one spot five times fast and the island tells you to calm down.
+- **Mood ring**: open the island and its rim shows how busy your CPU and GPU are, with the numbers in the top bar.
+- **Temperatures**: CPU and GPU temperatures in the top bar. The CPU reading comes from Windows' thermal zone, which
+  some PCs don't report.
+- **Touch grass**: after an hour at the PC, grass grows on the island for a few seconds.
+- **Night owl**: after midnight the island yawns and its clock gets sleepy.
+- **Drink water**: a reminder every 45 minutes at the PC.
+
 ## Grab text
 
 Press **Ctrl+Alt+T** (or the scan button in the Clipboard knob, or the tray menu), drag a box over any text on screen and
